@@ -3,7 +3,8 @@ from django.contrib.auth.decorators import login_required
 from .models import Batch, Project, SupervisorRequest, SupervisorManage
 from django.contrib import messages
 from apps.site_settings.models import dept_member
-from django.db import transaction
+from django.db import transaction, IntegrityError
+from django.db.models import F
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -94,7 +95,7 @@ def create_batch(request):
 
 
 @login_required
-@transaction.atomic  # ✅ Ensures all DB operations happen as a single atomic transaction
+@transaction.atomic
 def request_supervisor(request):
     user_email = request.user.email
     student = get_object_or_404(dept_member, email=user_email)
@@ -103,43 +104,58 @@ def request_supervisor(request):
     if not batch:
         return redirect("create_batch")
 
+    # Lock the batch to prevent concurrent supervisor requests for same batch
+    batch = Batch.objects.select_for_update().get(id=batch.id)
+
     # Get the latest request for this batch
     last_request = SupervisorRequest.objects.filter(batch=batch).order_by("-request_date").first()
 
-    # If there is a pending or accepted request → block new requests
+    # Prevent new request if last one is still active
     if last_request and last_request.status in ["Pending", "Accepted"]:
         messages.info(request, f"You already have a {last_request.status.lower()} supervisor request.")
         return redirect("batch_management")
 
-    # Fetch only supervisors who still have available slots
-    supervisor_slots = SupervisorManage.objects.select_for_update().filter(max_batches__gt=0)
+    # Fetch supervisors who still have slots
     available_supervisors = dept_member.objects.filter(
-        id__in=supervisor_slots.values_list("supervisor_id", flat=True)
+        id__in=SupervisorManage.objects.filter(max_batches__gt=0).values_list("supervisor_id", flat=True)
     )
 
     if request.method == "POST":
         supervisor_id = request.POST.get("supervisor_id")
         supervisor = get_object_or_404(dept_member, id=supervisor_id)
 
-        # Lock this supervisor row to prevent race condition
-        supervisor_slot = SupervisorManage.objects.select_for_update().get(supervisor=supervisor)
+        try:
+            # 🔒 Lock the supervisor slot record
+            supervisor_slot = SupervisorManage.objects.select_for_update().get(supervisor=supervisor)
 
-        # Check slot availability before creating request
-        if supervisor_slot.max_batches <= 0:
-            messages.error(request, "This supervisor has reached their supervision limit.")
+            # Check if any slots left
+            if supervisor_slot.max_batches <= 0:
+                messages.error(request, "This supervisor has reached their supervision limit.")
+                return redirect("request_supervisor")
+
+            # If last request was declined, clean it up
+            if last_request and last_request.status == "Declined":
+                last_request.delete()
+
+            # Create new request safely inside transaction
+            SupervisorRequest.objects.create(
+                batch=batch,
+                supervisor=supervisor,
+                status="Pending"
+            )
+
+            # Decrease supervisor slot count using F() expression (safe for concurrency)
+            supervisor_slot.max_batches = F('max_batches') - 1
+            supervisor_slot.save()
+            supervisor_slot.refresh_from_db()
+
+            messages.success(request, f"Request sent successfully to {supervisor.name}.")
+            return redirect("batch_management")
+
+        except IntegrityError:
+            # Handle any race conditions or DB conflicts gracefully
+            messages.error(request, "Something went wrong while sending the request. Please try again.", extra_tags="user")
             return redirect("request_supervisor")
-
-        # 🔹 If last request was declined, delete it before creating new one
-        if last_request and last_request.status == "Declined":
-            last_request.delete()
-
-        # Create new request and reduce supervisor slot
-        SupervisorRequest.objects.create(batch=batch, supervisor=supervisor, status="Pending")
-        supervisor_slot.max_batches -= 1
-        supervisor_slot.save()
-
-        messages.success(request, f"Request sent successfully to {supervisor.name}.")
-        return redirect("batch_management")
 
     return render(request, "request_supervisor.html", {
         "supervisors": available_supervisors
@@ -168,6 +184,34 @@ def supervisor_dashboard(request):
 
 
 
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import Paragraph, Table, TableStyle, Spacer
+from reportlab.lib.units import inch
+from io import BytesIO
+import cloudinary.uploader
+import datetime
+
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import (
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image
+)
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
+from reportlab.lib.units import inch
+from io import BytesIO
+import datetime
+import cloudinary.uploader
 
 @login_required
 def update_request_status(request, request_id, action):
@@ -175,12 +219,10 @@ def update_request_status(request, request_id, action):
     user_email = request.user.email
     supervisor = get_object_or_404(dept_member, email=user_email)
     sup_request = get_object_or_404(SupervisorRequest, id=request_id, supervisor=supervisor)
-
-    # Get supervisor management record
     supervisor_mgmt = get_object_or_404(SupervisorManage, supervisor=supervisor)
+    batch = sup_request.batch
 
     if action == "accept":
-        # Check supervisor batch quota
         if supervisor_mgmt.max_batches <= 0:
             messages.error(request, "You have reached your supervision limit.")
             return redirect("supervisor_dashboard")
@@ -188,29 +230,209 @@ def update_request_status(request, request_id, action):
         sup_request.status = "Accepted"
         sup_request.save()
 
-        # Assign supervisor to project (if project relation exists)
-        if hasattr(sup_request.batch, "project"):
-            project = sup_request.batch.project
+        if hasattr(batch, "project"):
+            project = batch.project
             project.supervisor = supervisor
             project.save()
 
-        # # Decrease available batch count
-        # supervisor_mgmt.max_batches -= 1
-        # supervisor_mgmt.save()
+        # === PDF GENERATION ===
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4,
+                                leftMargin=60, rightMargin=60, topMargin=60, bottomMargin=40)
 
-        messages.success(request, f"You have accepted the project request from {sup_request.batch}.")
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle('title', fontSize=14, alignment=TA_CENTER, spaceAfter=10, fontName='Times-Bold')
+        subtitle_style = ParagraphStyle('subtitle', fontSize=11, alignment=TA_CENTER, spaceAfter=6, fontName='Times-BoldItalic')
+        normal_style = ParagraphStyle('normal', fontSize=11, leading=15, fontName='Times-Roman')
+        justify_style = ParagraphStyle('justify', fontSize=10.5, leading=14, fontName='Times-Roman', alignment=TA_JUSTIFY)
+
+        content = []
+        def auto_width_image(path, fixed_height):
+            """Return a ReportLab Image with fixed height and proportional width"""
+            img = ImageReader(path)
+            iw, ih = img.getSize()
+            aspect = iw / float(ih)
+            return Image(path, width=fixed_height * aspect, height=fixed_height)
+        # === PAGE 1 (same as before) ===
+        try:
+            logos = [
+                auto_width_image("static/images/VELTECH.png", 1.1 * inch),
+                auto_width_image("static/images/NAAC.png", 1.1 * inch),
+                auto_width_image("static/images/NIRF.png", 1.1 * inch),
+            ]
+            logo_row = Table([[logos[0], logos[1], logos[2]]], colWidths=[2*inch]*3)
+            logo_row.setStyle(TableStyle([("ALIGN", (0, 0), (-1, -1), "CENTER")]))
+            content.append(logo_row)
+        except:
+            pass
+
+        content += [
+            Paragraph("<b>DEPARTMENT OF ARTIFICIAL INTELLIGENCE & MACHINE LEARNING (AIML)</b>", subtitle_style),
+            Paragraph("SCHOOL OF COMPUTING", subtitle_style),
+            Spacer(1, 10),
+            Paragraph("<b>PROJECT SUPERVISOR SELECTION FORM – COMMUNITY SERVICE PROJECT</b>", title_style),
+            Paragraph("10214AM501 - COMMUNITY SERVICE PROJECT | B.Tech - AIML", subtitle_style),
+            Paragraph("Academic Year: 2024-2025 (Winter Semester)", subtitle_style),
+            Spacer(1, 15),
+            Paragraph("I have read and understood the guidelines of the B.Tech. VTR-21 Regulations. "
+                      "The details of our Community Service Project area of work are given below:", normal_style),
+            Spacer(1, 12),
+        ]
+
+        # Project Info
+        project_table = [
+            ["TITLE:", getattr(batch.project, "title", "N/A")],
+            ["MAJOR AREA (Domain):", getattr(batch.project, "domain", "N/A")],
+            ["Targeted Journal (if any):", "_________________________"]
+        ]
+        t1 = Table(project_table, colWidths=[180, 300])
+        t1.setStyle(TableStyle([
+            ("FONTNAME", (0, 0), (-1, -1), "Times-Roman"),
+            ("FONTSIZE", (0, 0), (-1, -1), 11),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ]))
+        content.append(t1)
+        content.append(Spacer(1, 15))
+
+        # Declaration
+        content.append(Paragraph(
+            "I hereby declare that I will follow all procedures and guidelines pertaining to the Community Service Project. "
+            "I also declare that this project will be carried out under the guidance of the internal supervisor.",
+            normal_style,
+        ))
+        content.append(Spacer(1, 12))
+
+        # Students Table
+        data = [["S.No", "VTU No", "Register No", "Name of the Student", "Signature"]]
+        for i, member in enumerate(batch.members.all(), start=1):
+            data.append([
+                str(i),
+                getattr(member, "Id_number", ""),
+                getattr(member, "reg_no", ""),
+                member.name,
+                ""
+            ])
+        student_table = Table(data, colWidths=[40, 80, 90, 200, 80])
+        student_table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+            ("BOX", (0, 0), (-1, -1), 0.75, colors.black),
+            ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("FONTNAME", (0, 0), (-1, -1), "Times-Roman"),
+            ("FONTSIZE", (0, 0), (-1, -1), 10),
+        ]))
+        content.append(student_table)
+        content.append(Spacer(1, 15))
+
+        # Supervisor Section
+        supervisor_table = [
+            ["NAME OF THE SUPERVISOR:", supervisor.name],
+            ["SIGNATURE:", "_________________________"],
+            ["DATE:", str(datetime.date.today())],
+        ]
+        t2 = Table(supervisor_table, colWidths=[180, 300])
+        t2.setStyle(TableStyle([
+            ("FONTNAME", (0, 0), (-1, -1), "Times-Roman"),
+            ("FONTSIZE", (0, 0), (-1, -1), 11),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ]))
+        content.append(t2)
+        content.append(Spacer(1, 15))
+        content.append(Paragraph("<b>(Signature of Head of the Department)</b>", normal_style))
+
+        # === PAGE 2 ===
+        content.append(PageBreak())
+
+        # Add Logos again for Page 2
+        try:
+            logos2 = [
+                auto_width_image("static/images/VELTECH.png", 1.1 * inch),
+                auto_width_image("static/images/NAAC.png", 1.1 * inch),
+                auto_width_image("static/images/NIRF.png", 1.1 * inch),
+            ]
+            logo_row2 = Table([[logos2[0], logos2[1], logos2[2]]], colWidths=[2*inch]*3)
+            logo_row2.setStyle(TableStyle([("ALIGN", (0, 0), (-1, -1), "CENTER")]))
+            content.append(logo_row2)
+        except:
+            pass
+
+        content += [
+            Paragraph("SCHOOL OF COMPUTING", subtitle_style),
+            Paragraph("DEPARTMENT OF ARTIFICIAL INTELLIGENCE & MACHINE LEARNING", subtitle_style),
+            Spacer(1, 8),
+            Paragraph("<b>ABSTRACT SUBMISSION FORM</b>", title_style),
+            Paragraph("10214AM501 / COMMUNITY SERVICE PROJECT", subtitle_style),
+            Paragraph("ACADEMIC YEAR: 2024-2025", subtitle_style),
+            Paragraph("SEMESTER: WINTER", subtitle_style),
+            Spacer(1, 15),
+        ]
+
+        # Student Info Table
+        student_rows = []
+        for i, member in enumerate(batch.members.all(), start=1):
+            student_rows.append(["Name of the Student{}:".format(i), member.name])
+            student_rows.append(["VTU No. / Reg. No.:", f"{getattr(member, 'Id_number', '')} / {getattr(member, 'reg_no', '')}"])
+            student_rows.append(["", ""])  # space row
+        t3 = Table(student_rows, colWidths=[180, 300])
+        t3.setStyle(TableStyle([
+            ("FONTNAME", (0, 0), (-1, -1), "Times-Roman"),
+            ("FONTSIZE", (0, 0), (-1, -1), 11),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ]))
+        content.append(t3)
+        content.append(Spacer(1, 10))
+
+        # Project Title & Supervisor
+        info_table = [
+            ["Title of the Project:", getattr(batch.project, "title", "N/A")],
+            ["Project Supervisor:", supervisor.name],
+        ]
+        t4 = Table(info_table, colWidths=[180, 300])
+        t4.setStyle(TableStyle([
+            ("FONTNAME", (0, 0), (-1, -1), "Times-Roman"),
+            ("FONTSIZE", (0, 0), (-1, -1), 11),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ]))
+        content.append(t4)
+        content.append(Spacer(1, 10))
+
+        # Abstract
+        content.append(Paragraph("<b>ABSTRACT (Minimum 300 words):</b>", normal_style))
+        abstract = getattr(batch.project, "abstract", "No abstract available.")
+        content.append(Paragraph(abstract.replace("\n", "<br/>"), justify_style))
+        content.append(Spacer(1, 30))
+
+        # Signature Lines
+        sign_table2 = Table([
+            ["_________________________", "_________________________", "_________________________"],
+            ["STUDENT", "PROJECT SUPERVISOR", "PROJECT COORDINATOR"]
+        ], colWidths=[160, 160, 160])
+        sign_table2.setStyle(TableStyle([
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("FONTNAME", (0, 1), (-1, 1), "Times-Roman"),
+        ]))
+        content.append(sign_table2)
+
+        # === Build PDF ===
+        doc.build(content)
+        buffer.seek(0)
+
+        upload = cloudinary.uploader.upload(buffer, resource_type="auto")
+        pdf_url = upload.get("secure_url")
+        batch.pdf_report = pdf_url
+        batch.save()
+
+        messages.success(request, f"Accepted request and generated official two-page PDF for {batch}.")
+        return redirect("supervisor_dashboard")
 
     elif action == "decline":
         sup_request.status = "Declined"
         sup_request.save()
-
-        # Increase available batch count back
         supervisor_mgmt.max_batches += 1
         supervisor_mgmt.save()
-
         messages.info(request, f"You declined the project request from {sup_request.batch}.")
+        return redirect("supervisor_dashboard")
 
-    return redirect("supervisor_dashboard")
 
 @login_required
 def accepted_batches(request):

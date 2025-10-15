@@ -54,9 +54,14 @@
         <tr id="details-{{ req.id }}" class="details-row">
           <td colspan="6">
             <div class="details-content">
-              <p><strong>Project Title:</strong> {{ req.batch.project.title }}</p>
-              <p><strong>Domain:</strong> {{ req.batch.project.domain }}</p>
-              <p><strong>Abstract:</strong> {{ req.batch.project.abstract }}</p>
+              <p><strong>Batch Members:</strong><br>
+                {% for m in req.batch.members.all %}
+                  {{ m.name }}{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+              </p>
+              <p><strong>Project Title:</strong><br> {{ req.batch.project.title }}</p>
+              <p><strong>Domain:</strong><br> {{ req.batch.project.domain }}</p>
+              <p><strong>Abstract:</strong><br> {{ req.batch.project.abstract }}</p>
 
               <div class="details-buttons">
                 {% if req.status == "Pending" %}

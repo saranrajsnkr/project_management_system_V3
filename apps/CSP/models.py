@@ -4,6 +4,8 @@ from apps.site_settings.models import dept_member
 class Batch(models.Model):
     batch_leader = models.ForeignKey(dept_member, on_delete=models.CASCADE, related_name='leader_batches', null=True, blank=True)
     members = models.ManyToManyField(dept_member, related_name='student_batches')
+    pdf_report = models.URLField(blank=True, null=True)
+
 
     def __str__(self):
         return f"Batch {self.id} - Leader: {self.batch_leader}"
