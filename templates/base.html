@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>PMS - AIML</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Google Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+
+    <!-- Favicon -->
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="{% static 'images/LOGO.png' %}"
+    />
+
+    <style>
+          :root {
+            --primary: #3b82f6;
+            --primary-dark: #1e40af;
+            --accent: #06b6d4;
+            --background: linear-gradient(135deg, #f8fafc, #e0f2fe);
+            --surface: rgba(255, 255, 255, 0.8);
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --radius: 16px;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            --glass: backdrop-filter: blur(12px) saturate(180%);
+            --transition: all 0.3s ease-in-out;
+          }
+
+          * { margin: 0; padding: 0; box-sizing: border-box; scroll-behavior: smooth; scroll-bar-color: var(--primary) var(--background); }
+
+          body {
+            font-family: 'Inter', sans-serif;
+            background: var(--background);
+            color: var(--text-dark);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            line-height: 1.6;
+          }
+
+          /* HEADER */
+          header {
+            text-align: center;
+            padding: 1.5rem 1rem;
+            background: var(--surface);
+            box-shadow: var(--shadow);
+            position: relative;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+          }
+
+          .logo-container {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 0.8rem;
+            flex-wrap: wrap;
+          }
+
+          .logo-container img {
+            height: 55px;
+            transition: transform 0.3s ease;
+          }
+
+          .logo-container img:hover {
+            transform: scale(1.05);
+          }
+
+          header h1 {
+            font-size: 1.8rem;
+            font-family: "Times New Roman", Times, serif;
+          }
+          h1 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--text-dark);
+          }
+
+          /* NAVBAR */
+          .navbar {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(2.5px);
+            /* Applies the blur effect */
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: var(--shadow);
+            margin: 1rem auto;
+            width: 95%;
+            max-width: 1200px;
+            border-radius: var(--radius);
+            padding: 0.8rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;   /* ✅ navbar sticks */
+            top: 20px;             /* ✅ sticks to top */
+            z-index: 100;       /* ✅ stays above content */
+              var(--glass);
+            /* animation */
+            opacity: 0;
+            transform: translateY(-30px);
+            animation: fadeDown 0.8s ease-out forwards;
+          }
+          /* Keyframes for fade from top */
+          @keyframes fadeDown {
+            from {
+              opacity: 0;
+              transform: translateY(-30px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+        .nav-logo {
+          font-weight: 600;
+          color: var(--text-dark);
+          text-decoration: none;
+          font-size: 1.2rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        .nav-links {
+          list-style: none;
+          display: flex;
+          gap: 1.5rem;
+        }
+        .nav-links li a {
+          text-decoration: none;
+          color: var(--text-muted);
+          font-weight: 500;
+          transition: var(--transition);
+        }
+        .nav-links li a:hover {
+          color: var(--primary);
+        }
+        .hamburger { display: none; font-size: 1.6rem; cursor: pointer; }
+        /* MAIN */
+        .main-container {
+          max-width: 1200px;
+          margin: 2rem auto;
+          width: 95%;
+          flex: 1;
+        }
+        .card-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+          gap: 1.5rem;
+        }
+.card-wrapper {
+  opacity: 0;
+  transform: translateY(30px);
+  animation: fadeUp 0.8s ease-out forwards;
+  animation-delay: var(--delay, 0s);
+  
+}
+
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 2rem;
+  text-align: center;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;               /* ensures equal height */
+  flex-direction: column;      /* content stacked */
+  justify-content: flex-start; /* keep text at top */
+  height: 100%;                /* stretch inside grid */
+  min-height: 220px;           /* optional consistent height */
+}
+
+/* Hover only affects card, not wrapper */
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+}
+
+
+      /* Keyframes */
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* stagger entry */
+      .card-wrapper:nth-child(1) { animation-delay: 0.2s; }
+      .card-wrapper:nth-child(2) { animation-delay: 0.4s; }
+      .card-wrapper:nth-child(3) { animation-delay: 0.6s; }
+      .card-wrapper:nth-child(4) { animation-delay: 0.8s; }
+      .card-wrapper:nth-child(5) { animation-delay: 1s; }
+      .card-wrapper:nth-child(6) { animation-delay: 1.2s; }
+      .card-wrapper:nth-child(7) { animation-delay: 1.4s; }
+      .card-wrapper:nth-child(8) { animation-delay: 1.6s; }
+      .card-wrapper:nth-child(9) { animation-delay: 1.8s; }
+      {% comment %} .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+      } {% endcomment %}
+      .card i {
+        font-size: 2rem;
+        color: var(--primary);
+        margin-bottom: 1rem;
+      }
+      .card h3 {
+        font-family: 'Poppins', sans-serif;
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+      }
+      .card p {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+      }
+      .alert {
+          padding: 1.2rem;
+          border-radius: 8px;
+          margin-bottom: 1rem;
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          font-weight: 500;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        .alert::before {
+          font-family: "Font Awesome 6 Free";
+          font-weight: 900;
+          font-size: 1.5rem;
+        }
+        .alert.user.success {
+          background-color: rgba(16, 185, 129, 0.15);
+          border-left: 4px solid var(--success);
+          color: #047857;
+        }
+        .alert.user.success::before {
+          content: "\f058"; /* fa-circle-check */
+        }
+        .alert.user.error {
+          background-color: rgba(239, 68, 68, 0.15);
+          border-left: 4px solid var(--error);
+          color: #b91c1c;
+        }
+        .alert.user.error::before {
+          content: "\f057"; /* fa-circle-xmark */
+        }
+        .alert.user.warning {
+          background-color: rgba(245, 158, 11, 0.15);
+          border-left: 4px solid var(--warning);
+          color: #b45309;
+        }
+        .alert.user.warning::before {
+          content: "\f071"; /* fa-triangle-exclamation */
+        }
+        .alert.user.info {
+          background-color: rgba(59, 130, 246, 0.15);
+          border-left: 4px solid var(--info);
+          color: #1d4ed8;
+        }
+        .alert.user.info::before {
+          content: "\f05a"; /* fa-circle-info */
+        }
+      /* FOOTER */
+      footer {
+        background: #0f172a;
+        color: #cbd5e1;
+        text-align: center;
+        padding: 1.5rem 0;
+        margin-top: auto;
+      }
+      footer p {
+        font-size: 0.9rem;
+      }
+      /* RESPONSIVE */
+      @media (max-width: 768px) {
+        .nav-links {
+          position: absolute;
+          top: 60px;
+          right: 0;
+          background: var(--surface);
+          flex-direction: column;
+          width: 200px;
+          padding: 1rem;
+          display: none;
+          box-shadow: var(--shadow);
+          border-radius: var(--radius);
+        }
+        
+        .nav-links.active { 
+          display: flex;            
+          background: rgba(255, 255, 255, 1);
+          backdrop-filter: blur(2px);
+          /* Applies the blur effect */
+          -webkit-backdrop-filter: blur(10px);  
+        }
+        
+        
+        .hamburger { display: block; }
+        
+        
+        h1 { font-size: 1.5rem; }
+        
+          header h1 {
+            font-size: 1.3rem;
+            font-family: "Times New Roman", Times, serif;
+          }
+        
+        .logo-container img {
+              height: 40px;
+              transition: transform 0.3s ease;
+          }
+      }
+
+      
+/*====================================
+        Courser Styles
+====================================*/
+{% comment %} * {
+  cursor: none !important;
+} {% endcomment %}
+
+{% comment %} /* Main Cursor (smaller circle) */
+.custom-cursor {
+  width: 10px;
+  height: 10px;
+  background-color: var(--primary);
+  border-radius: 50%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  /* Center the element */
+  transform: translate(-50%, -50%);
+  transition: transform 0.08s ease-out, background-color 0.5s ease, color 0.5s ease;
+  z-index: 10000;
+}
+
+/* Tail Circle: only an outline, no background fill */
+.cursor-trail {
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: 2px solid var(--primary-dark);
+  border-radius: 50%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  /* Start with no scaling */
+  transform: translate(-50%, -50%) scale(1);
+  transition: transform 0.15s ease-out, opacity 0.3s, background-color 0.5s ease, color 0.5s ease;
+  z-index: 9999;
+  text-shadow: #323437 1px 0 10px;
+}
+
+/* Zoom-out effect on mouse down (will be toggled by JS) */
+
+
+/* Click Effect (expanding circle) */
+.click-effect {
+  position: fixed;
+  width: 60px;
+  height: 60px;
+  background: var(--hover-color);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: clickAnimation 0.5s ease-out;
+  z-index: 10000;
+  pointer-events: none;
+}
+
+@keyframes clickAnimation {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.5;
+  }
+
+  100% {
+    transform: translate(-50%, -50%) scale(3);
+    opacity: 0;
+  }
+}
+
+/* (Optional) Styling for magnetic elements */
+button,
+.magnetic {
+  padding: 10px 20px; {% endcomment %}
+  {% comment %} margin: 35px; {% endcomment %}
+  {% comment %} font-size: 16px;
+  border: none;
+  background: var(--primary-color);
+  color: var(--text-color);
+  cursor: pointer;
+  /* Show normal cursor for these elements */
+}
+
+.custom-cursor:hover .cursor-trail :hover {
+  background-color: var(--text-color);
+  z-index: 10000;
+  transform: translate(-50%, -50%) scale(1.5);
+  transition: transform 0.15s ease-out, opacity 0.3s, background-color 0.5s ease, color 0.5s ease;
+
+}
+
+.custom-cursor.glow {
+    background-color: var(--hover-color);
+
+  transition: box-shadow 0.3s ease-out, background-color 0.5s ease, color 0.5s ease;
+}
+
+.cursor-trail.glow {
+    border: 2px solid var(--text-color);
+
+  transition: box-shadow 0.3s ease-out, background-color 0.5s ease, color 0.5s ease;
+} {% endcomment %}
+
+
+
+
+    </style>
+  </head>
+  <body>
+    <header class="header-animate">
+      <div class="logo-container">
+        <img
+          src="{% static 'images/VELTECH.png' %}"
+          alt="Vel Tech"
+          class="logo {%if path == '/' %}fade-left delay-1{% endif %}"
+        />
+        <img
+          src="{% static 'images/NIRF.png' %}"
+          alt="NIRF"
+          class="logo {%if path == '/' %}fade-left delay-2{% endif %}"
+        />
+        <img
+          src="{% static 'images/NAAC.png' %}"
+          alt="NAAC"
+          class="logo {%if path == '/' %}fade-left delay-3{% endif %}"
+        />
+      </div>
+      <h1 class="title {%if path == '/' %}fade-up delay-4{% endif %}">Project Management System - AIML</h1>
+    </header>
+
+    <style>
+      /* Smooth fade-up */
+      .fade-up {
+        opacity: 0;
+        transform: translateY(20px);
+        animation: fadeUp 1s ease forwards;
+      }
+      @keyframes fadeUp {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Smooth slide-left */
+      .fade-left {
+        opacity: 0;
+        transform: translateX(-30px);
+        animation: fadeLeft 0.8s ease forwards;
+      }
+      @keyframes fadeLeft {
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      /* Delay control for staggered animation */
+      .delay-1 {
+        animation-delay: 0.2s;
+      }
+      .delay-2 {
+        animation-delay: 0.4s;
+      }
+      .delay-3 {
+        animation-delay: 0.6s;
+      }
+      .delay-4 {
+        animation-delay: 1s;
+      }
+
+      .logo {
+        height: 60px;
+        margin-right: 10px;
+      }
+
+      {% comment %} .nav-icon.active {
+      color: var(--primary) !important;
+      /* Highlight active icon */
+      position: relative;
+      /* Needed for positioning */
+      } {% endcomment %}
+
+      .nav-icon.active {
+  color: #fff !important;
+  background: linear-gradient(to right, var(--primary), var(--accent));
+  padding: 6px 16px;             /* Add breathing space */
+  border-radius: var(--radius);           /* Softer pill shape */
+  font-weight: 600;              /* Make text pop */
+  transition: all 0.3s ease;     /* Smooth animation */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Subtle shadow */
+}
+
+/* Optional hover effect for active */
+.nav-icon.active:hover {
+  transform: translateY(-2px);
+}
+
+
+/* Default: desktop visible, mobile hidden */
+.desktop-logo { display: inline-flex; }
+.mobile-logo { display: none; }
+
+/* Mobile view */
+@media (max-width: 768px) {
+  .desktop-logo { display: none; }
+  .mobile-logo { display: inline-flex; }
+}
+
+    </style>
+{% block navbar %}
+
+    <nav class="navbar" style="z-index: 1;">
+        <!-- Desktop logo -->
+        <a href="/" class="nav-logo nav-icon desktop-logo {% if path == '/' %}act{% endif %}">
+          <i class="fa-solid fa-graduation-cap"></i> PMS
+        </a>
+
+        <!-- Mobile logo -->
+        <a href="/" class="nav-logo nav- mobile-logo {% if request.resolver_match.url_name == 'company_list' %}active{% endif %}">
+{% if path == '/' %}
+    <i class="bi-solid bi-house"></i> Home
+  {% elif request.resolver_match.url_name == 'company_list' %}
+    <i class="fa-solid fa-briefcase"></i> Internships
+  {% elif request.resolver_match.url_name == 'check_application_status' %}
+    <i class="fa-solid fa-circle-check"></i> Application Status
+  {% elif request.resolver_match.url_name == 'cmpapply_form' %}
+    <i class="fa-solid fa-file-signature"></i> External Application
+  {% elif request.resolver_match.url_name == 'submit_report' %}
+    <i class="fa-solid fa-headset"></i> Support
+  {% elif request.resolver_match.url_name == 'account_dashboard' %}
+    <i class="fa-solid fa-user-gear"></i> Accounts & Logout
+  {% else %}
+    <i class="fa-solid fa-graduation-cap"></i> Portal
+  {% endif %}
+        </a>
+
+      <ul class="nav-links" id="navMenu">
+        <li><a href="/" class="nav-icon {% if path == '/' %}active{% endif %}">Home</a></li>
+        <li><a href="{% url 'account_dashboard' %}" class="nav-icon {% if request.resolver_match.url_name == 'account_dashboard' %}active{% endif %}">Accounts & Logout</a></li>
+      </ul>
+      <div class="hamburger" id="hamburger">
+        <i class="fa fa-bars"></i>
+      </div>
+    </nav>
+    {% endblock %}
+
+
+    <main class="main-container" style="z-index: 0;">
+      <div class="custom-cursor" id="cursor"></div>
+      <div class="cursor-trail" id="cursor"></div>
+      <div class="messages">
+        {% for message in messages %} {% if 'user' in message.tags %}
+        <div class="alert {{ message.tags }}">{{ message }}</div>
+        {% endif %} {% endfor %}
+      </div>
+      {% block content %} {% endblock %}
+    </main>
+
+    <footer>
+      <p>
+        &copy; {{ year|default:2025 }} Internship Portal | Managed by Nitrezz
+        Tech Solutions (AIML Student)
+      </p>
+    </footer>
+
+    <script>
+      const hamburger = document.getElementById("hamburger");
+      const navMenu = document.getElementById("navMenu");
+      hamburger.addEventListener("click", () => {
+        navMenu.classList.toggle("active");
+      });
+
+
+      {% comment %} document.addEventListener("DOMContentLoaded", () => {
+    const cursor = document.querySelector(".custom-cursor");
+    const trail = document.querySelector(".cursor-trail");
+
+    const hoverTargets = document.querySelectorAll('button, a, .hover-target');
+
+    hoverTargets.forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        customCursor.classList.add('glow');
+        cursorTrail.classList.add('glow');
+      });
+
+      el.addEventListener('mouseleave', () => {
+        customCursor.classList.remove('glow');
+        cursorTrail.classList.remove('glow');
+      });
+    });
+
+    // Update positions on mouse move (always include the centering offset)
+    document.addEventListener("mousemove", (e) => {
+      const baseTransform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+      cursor.style.transform = baseTransform;
+      // Apply scale based on whether click-zoom is active
+      if (trail.classList.contains("click-zoom")) {
+        trail.style.transform = `${baseTransform} scale(2)`;
+      } else {
+        trail.style.transform = `${baseTransform} scale(1)`;
+      }
+    });
+
+    // Toggle zoom on mouse down/up
+    document.addEventListener("mousedown", () => {
+      trail.classList.add("click-zoom");
+    });
+    document.addEventListener("mouseup", () => {
+      trail.classList.remove("click-zoom");
+    });
+
+    // Click Effect: expanding circle at click location
+    document.addEventListener("click", (e) => {
+      const clickEffect = document.createElement("div");
+      clickEffect.classList.add("click-effect");
+      clickEffect.style.left = `${e.clientX}px`;
+      clickEffect.style.top = `${e.clientY}px`;
+      document.body.appendChild(clickEffect);
+      setTimeout(() => {
+        clickEffect.remove();
+      }, 500);
+    });
+
+    // Magnetic effect on hover for buttons and elements with class "magnetic"
+    document.querySelectorAll("button, .magnetic").forEach((el) => {
+      el.addEventListener("mousemove", (e) => {
+        const rect = el.getBoundingClientRect();
+        const offsetX = e.clientX - rect.left - rect.width / 2;
+        const offsetY = e.clientY - rect.top - rect.height / 2;
+        const transformValue = `translate(${e.clientX + offsetX}px, ${e.clientY + offsetY}px) translate(-50%, -50%)`;
+        cursor.style.transform = transformValue;
+        if (trail.classList.contains("click-zoom")) {
+          trail.style.transform = `${transformValue} scale(2)`;
+        } else {
+          trail.style.transform = `${transformValue} scale(1)`;
+        }
+      });
+
+      // Use the event parameter in mouseleave so the code works correctly
+      el.addEventListener("mouseleave", (e) => {
+        const transformValue = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+        cursor.style.transform = transformValue;
+        if (trail.classList.contains("click-zoom")) {
+          trail.style.transform = `${transformValue} scale(2)`;
+        } else {
+          trail.style.transform = `${transformValue} scale(1)`;
+        }
+      });
+
+      // Optional: Button click pulse effect on the element itself
+      el.addEventListener("click", (e) => {
+        const pulseEffect = document.createElement("div");
+        pulseEffect.classList.add("click-effect");
+        pulseEffect.style.left = `${e.offsetX}px`;
+        pulseEffect.style.top = `${e.offsetY}px`;
+        el.appendChild(pulseEffect);
+        setTimeout(() => {
+          pulseEffect.remove();
+        }, 500);
+      });
+    });
+    document.addEventListener("DOMContentLoaded", function () {
+      let images = document.querySelectorAll(".image-gallery img");
+      let index = 0;
+    
+      function showNextImage() {
+          images[index].style.display = "none";
+          index = (index + 1) % images.length;
+          images[index].style.display = "block";
+      }
+    
+      setInterval(showNextImage, 3000); // Change image every 3 seconds
+    });
+  });
+
+  function handleScrollFadeIn() {
+    const fadeIns = document.querySelectorAll('.fade-in');
+    fadeIns.forEach(item => {
+      const rect = item.getBoundingClientRect();
+      const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+      // Adjust "trigger" point as needed (e.g., 100px from bottom of viewport)
+      if (rect.top <= windowHeight - 100) {
+        item.classList.add('visible');
+      }
+    });
+  }
+
+  // Run on scroll and on page load
+  window.addEventListener('scroll', handleScrollFadeIn);
+  window.addEventListener('load', handleScrollFadeIn);
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const cards = document.querySelectorAll(".service-card");
+  
+    cards.forEach((card, index) => {
+      card.style.animationDelay = `${index * 0.2}s`; // Staggered delay effect
+    });
+  });
+  document.addEventListener("DOMContentLoaded", function () {
+    const cards = document.querySelectorAll(".service-card");
+    
+    // Apply a staggered animation delay for each card
+    cards.forEach((card, index) => {
+      card.style.animationDelay = `${index * 0.2}s`;
+    });
+  });
+    
+document.addEventListener('DOMContentLoaded', function(){
+  // List of icon classes (without the "fa" prefix since it's added in the code)
+  var icons = [
+    'fa-book',
+    'fa-graduation-cap',
+    'fa-university',
+    'fa-pencil-alt',
+    'fa-chalkboard-teacher',
+    'fa-school',
+    'fa-user-graduate',
+    'fa-laptop',
+    'fa-microscope',
+    'fa-pen',
+    'fa-globe',
+    'fa-flask',
+    'fa-calculator',
+    'fa-book-open',
+    'fa-chalkboard',
+    'fa-lightbulb',
+    'fa-folder-open',
+    'fa-highlighter',
+    'fa-brain',
+    'fa-scroll'
+  ];
+  
+  // Select all timeline icon elements
+  var timelineIcons = document.querySelectorAll('.timeline-icon');
+  
+  timelineIcons.forEach(function(el){
+    // Pick a random icon from the list
+    var randomIcon = icons[Math.floor(Math.random() * icons.length)];
+    // Insert the icon element; note the "fa" class is added along with the random class
+    el.innerHTML = '<i class="fa ' + randomIcon + '"></i>';
+  });
+});
+
+document.querySelectorAll('.education-item').forEach((item, index) => {
+  item.style.animationDelay = `${index * 0.2}s`;
+});
+
+document.querySelectorAll('.timeline-content').forEach((item, index) => {
+  item.style.animationDelay = `${index * 0.2}s`;
+});
+document.querySelectorAll('.project-card').forEach((item, index) => {
+  item.style.animationDelay = `${index * 0.2}s`;
+});
+
+
+document.addEventListener('DOMContentLoaded', function(){
+  // List of FontAwesome icon classes for work experience
+  var icons = [
+    'fa-briefcase',
+    'fa-laptop-code',
+    'fa-chart-line',
+    'fa-cogs',
+    'fa-lightbulb',
+    'fa-user-tie',
+    'fa-network-wired',
+    'fa-building'
+  ];
+  
+  // Select all timeline-icon elements
+  var timelineIcons = document.querySelectorAll('.worktimeline-icon');
+  
+  timelineIcons.forEach(function(el){
+    // Randomly select an icon from the list
+    var randomIcon = icons[Math.floor(Math.random() * icons.length)];
+    // Inject the FontAwesome icon into the timeline-icon container
+    el.innerHTML = '<i class="fa ' + randomIcon + '"></i>';
+  });
+});
+
+
+
+
+console.log("Inline JavaScript is working!");
+        
+if (localStorage.getItem('darkMode') === 'enabled') {
+    document.body.classList.add('dark-mode');
+    document.getElementById('modeIcon').classList.remove('bi-cloud-sun');
+    document.getElementById('modeIcon').classList.add('bi-moon');
+}
+
+document.getElementById("darkModeToggle").addEventListener("click", function() {
+    const isDarkMode = document.body.classList.toggle("dark-mode");
+
+    const modeIcon = document.getElementById("modeIcon");
+    if (isDarkMode) {
+        modeIcon.classList.remove("bi-cloud-sun");
+        modeIcon.classList.add("bi-moon");
+        localStorage.setItem("darkMode", "enabled");
+    } else {
+        modeIcon.classList.remove("bi-moon");
+        modeIcon.classList.add("bi-cloud-sun");
+        localStorage.removeItem("darkMode");
+    }
+});
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    const sections = document.querySelectorAll(".home-edu");
+
+    const observerOptions = {
+        root: null,
+        rootMargin: "0px",
+        threshold: 0.1
+    };
+
+    const observer = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                // Activate the main section
+                entry.target.classList.add("active");
+
+                // Activate the internal effects
+                entry.target.querySelectorAll(".effect-wrapper").forEach(effectElement => {
+                    effectElement.classList.add("start-effect");
+                });
+
+                // Stop observing once active
+                observer.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+
+    sections.forEach(section => observer.observe(section));
+});
+
+
+document.addEventListener("DOMContentLoaded", function () {
+  const heroSection = document.getElementById("hero");
+  const navLink = document.querySelector('a[href="#hero"]');
+
+  window.addEventListener("scroll", function () {
+    const rect = heroSection.getBoundingClientRect();
+    if (rect.top <= 50 && rect.bottom >= 50) {
+      navLink.classList.add("active");
+    } else {
+      navLink.classList.remove("active");
+    }
+  });
+});
+document.addEventListener("DOMContentLoaded", function () {
+  const heroSection = document.getElementById("educationpage");
+  const navLink = document.querySelector('a[href="#educationpage"]');
+
+  window.addEventListener("scroll", function () {
+    const rect = heroSection.getBoundingClientRect();
+    if (rect.top <= 50 && rect.bottom >= 50) {
+      navLink.classList.add("active");
+    } else {
+      navLink.classList.remove("active");
+    }
+  });
+});
+document.addEventListener("DOMContentLoaded", function () {
+  const heroSection = document.getElementById("skillspage");
+  const navLink = document.querySelector('a[href="#skillspage"]');
+
+  window.addEventListener("scroll", function () {
+    const rect = heroSection.getBoundingClientRect();
+    if (rect.top <= 50 && rect.bottom >= 50) {
+      navLink.classList.add("active");
+    } else {
+      navLink.classList.remove("active");
+    }
+  });
+});
+document.addEventListener("DOMContentLoaded", function () {
+  const heroSection = document.getElementById("projectpage");
+  const navLink = document.querySelector('a[href="#projectpage"]');
+
+  window.addEventListener("scroll", function () {
+    const rect = heroSection.getBoundingClientRect();
+    if (rect.top <= 50 && rect.bottom >= 50) {
+      navLink.classList.add("active");
+    } else {
+      navLink.classList.remove("active");
+    }
+  });
+});
+document.addEventListener("DOMContentLoaded", function () {
+  const heroSection = document.getElementById("servicespage");
+  const navLink = document.querySelector('a[href="#servicespage"]');
+
+  window.addEventListener("scroll", function () {
+    const rect = heroSection.getBoundingClientRect();
+    if (rect.top <= 50 && rect.bottom >= 50) {
+      navLink.classList.add("active");
+    } else {
+      navLink.classList.remove("active");
+    }
+  });
+});
+document.addEventListener("DOMContentLoaded", function () {
+  const heroSection = document.getElementById("contactpage");
+  const navLink = document.querySelector('a[href="#contactpage"]');
+
+  window.addEventListener("scroll", function () {
+    const rect = heroSection.getBoundingClientRect();
+    if (rect.top <= 50 && rect.bottom >= 50) {
+      navLink.classList.add("active");
+    } else {
+      navLink.classList.remove("active");
+    }
+  });
+});
+document.addEventListener("DOMContentLoaded", function () {
+  const heroSection = document.getElementById("educationpage");
+  const navLink = document.querySelector('a[href="#educationpage"]');
+
+  window.addEventListener("scroll", function () {
+    const rect = heroSection.getBoundingClientRect();
+    if (rect.top <= 50 && rect.bottom >= 50) {
+      navLink.classList.add("active");
+    } else {
+      navLink.classList.remove("active");
+    }
+  });
+}); {% endcomment %}
+
+    </script>
+  </body>
+</html>

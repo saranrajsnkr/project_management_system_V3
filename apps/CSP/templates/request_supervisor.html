@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Request Supervisor{% endblock %}
+{% block content %}
+
+<section class="supervisor-section">
+  <h2 class="section-title">Available Supervisors</h2>
+
+  {% if supervisors %}
+  <div class="supervisor-grid">
+    {% for s in supervisors %}
+    <div class="supervisor-card" style="--i: {{ forloop.counter }}">
+      <div class="supervisor-header">
+        <h3><i class="fa-solid fa-user-tie"></i> {{ s.name }}</h3>
+      </div>
+
+      <div class="supervisor-details">
+        <p><strong>Role:</strong> {{ s.role }}</p>
+        {% if s.department %}
+        <p><strong>Department:</strong> {{ s.department }}</p>
+        {% endif %}
+        {% if s.email %}
+        <p><strong>Email:</strong> {{ s.email }}</p>
+        {% endif %}
+        {% if supervisors.max_batches %}
+        <p><strong>Quota:</strong> {{ supervisors.max_batches }}</p>
+        {% endif %}
+      </div>
+
+      <form method="POST" action="{% url 'request_supervisor' %}">
+        {% csrf_token %}
+        <input type="hidden" name="supervisor_id" value="{{ s.id }}">
+        <button type="submit" class="request-btn">
+          <i class="fa-solid fa-paper-plane"></i> Send Request
+        </button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="no-supervisor">
+    <p class="no-supervisor-text">No supervisors available at the moment.</p>
+  </div>
+  {% endif %}
+</section>
+
+<style>
+/* Section */
+.supervisor-section {
+  {% comment %} margin: 3rem auto; {% endcomment %}
+  max-width: 1200px;
+  padding: 1rem;
+}
+
+.section-title {
+  text-align: center;
+  font-family: "Poppins", sans-serif;
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 2rem;
+  position: relative;
+  animation: fadeIn 1s ease forwards;
+}
+.section-title::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 4px;
+  background: linear-gradient(to right, var(--primary), var(--accent));
+  border-radius: 2px;
+}
+
+/* Grid */
+.supervisor-grid {
+  column-count: 3;
+  column-gap: 1.5rem;
+}
+
+.supervisor-card {
+  display: inline-block;
+  width: 100%;
+  margin-bottom: 1.5rem;
+  break-inside: avoid;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.8rem;
+  transition: var(--transition);
+
+  /* animation */
+  opacity: 0;
+  transform: translateY(30px);
+  animation: fadeInUp 0.6s ease forwards;
+  animation-delay: calc(0.1s * var(--i, 1));
+}
+
+.supervisor-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+}
+
+/* Header */
+.supervisor-header h3 {
+  font-family: "Poppins", sans-serif;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 1rem;
+}
+
+/* Details */
+.supervisor-details p {
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+.supervisor-details p strong {
+  color: var(--text-dark);
+  font-weight: 600;
+}
+
+/* Button */
+.request-btn {
+  display: inline-block;
+  margin-top: 1rem;
+  background: linear-gradient(to right, var(--primary), var(--accent));
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.7rem 1.4rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 6px 15px rgba(37, 99, 235, 0.35);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: var(--transition);
+}
+.request-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 25px rgba(37, 99, 235, 0.45);
+}
+
+/* Empty Message */
+.no-supervisor-text {
+  text-align: center;
+  font-weight: bold;
+  color: red;
+  font-size: 1.1rem;
+  margin-top: 2rem;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .supervisor-grid { column-count: 2; }
+}
+@media (max-width: 768px) {
+  .supervisor-grid { column-count: 1; }
+  .request-btn { width: 100%; justify-content: center; }
+}
+</style>
+
+{% endblock %}

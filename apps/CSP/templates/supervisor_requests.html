@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Supervisor Dashboard{% endblock %}
+{% block content %}
+
+<section class="supervisor-dashboard">
+  <h2 class="section-title">Supervisor Dashboard</h2>
+
+  {% if messages %}
+  <div class="messages-container">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if requests %}
+  <div class="table-wrapper">
+    <table class="styled-table">
+      <thead>
+        <tr>
+          <th>Batch ID</th>
+          <th>Leader</th>
+          <th>Project Title</th>
+          <th>Domain</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in requests %}
+        <tr class="main-row" onclick="toggleDetails('{{ req.id }}')">
+          <td>{{ req.batch.id }}</td>
+          <td>{{ req.batch.batch_leader.name }}</td>
+          <td>{{ req.batch.project.title }}</td>
+          <td>{{ req.batch.project.domain }}</td>
+          <td>
+            {% if req.status == "Pending" %}
+            <span class="badge bg-warning text-dark">Pending</span>
+            {% elif req.status == "Accepted" %}
+            <span class="badge bg-success">Accepted</span>
+            {% else %}
+            <span class="badge bg-danger">Declined</span>
+            {% endif %}
+          </td>
+          <td>
+            <button class="btn-view">
+              <i class="fa-solid fa-eye"></i> View Details
+            </button>
+          </td>
+        </tr>
+
+        <!-- Collapsible details -->
+        <tr id="details-{{ req.id }}" class="details-row">
+          <td colspan="6">
+            <div class="details-content">
+              <p><strong>Project Title:</strong> {{ req.batch.project.title }}</p>
+              <p><strong>Domain:</strong> {{ req.batch.project.domain }}</p>
+              <p><strong>Abstract:</strong> {{ req.batch.project.abstract }}</p>
+
+              <div class="details-buttons">
+                {% if req.status == "Pending" %}
+                <a href="{% url 'update_request_status' req.id 'accept' %}" class="btn-accept">
+                  <i class="fa-solid fa-check"></i> Accept
+                </a>
+                <a href="{% url 'update_request_status' req.id 'decline' %}" class="btn-decline">
+                  <i class="fa-solid fa-xmark"></i> Decline
+                </a>
+                {% else %}
+                <button class="btn-disabled" disabled>No Action</button>
+                {% endif %}
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="no-requests">No project requests assigned to you yet.</p>
+  {% endif %}
+</section>
+
+<script>
+  function toggleDetails(id) {
+    const row = document.getElementById(`details-${id}`);
+    row.classList.toggle("show");
+  }
+</script>
+
+<style>
+/* General Section Styling */
+.supervisor-dashboard {
+  max-width: 1200px;
+  {% comment %} margin: 3rem auto; {% endcomment %}
+  padding: 1rem;
+}
+
+.section-title {
+  font-family: "Poppins", sans-serif;
+  font-size: 2rem;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 2rem;
+  color: var(--text-dark);
+  position: relative;
+  animation: fadeIn 0.8s ease forwards;
+}
+.section-title::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 4px;
+  background: linear-gradient(to right, var(--primary), var(--accent));
+  border-radius: 2px;
+}
+
+/* Table Wrapper */
+.table-wrapper {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  animation: slideUp 0.7s ease forwards;
+}
+
+.styled-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: "Poppins", sans-serif;
+}
+.styled-table thead {
+  background: linear-gradient(to right, var(--primary), var(--accent));
+  color: #fff;
+}
+.styled-table th, .styled-table td {
+  padding: 1rem;
+  text-align: left;
+  font-size: 0.95rem;
+}
+.styled-table tr:nth-child(even) {
+  background: rgba(37, 99, 235, 0.05);
+}
+.styled-table tr:hover:not(.details-row) {
+  background: rgba(37, 99, 235, 0.1);
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+/* Buttons */
+.btn-view {
+  background: linear-gradient(to right, var(--primary), var(--accent));
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.5rem 1.2rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: var(--transition);
+}
+.btn-view:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.45);
+}
+
+/* Collapsible Details */
+.details-row {
+  display: none;
+  background: #f9fafb;
+  border-top: 1px solid #ddd;
+}
+.details-row.show {
+  display: table-row;
+  animation: fadeInDetails 0.4s ease forwards;
+}
+.details-content {
+  padding: 1.5rem;
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  transition: all 0.3s ease;
+}
+.details-content p {
+  margin-bottom: 0.6rem;
+  font-size: 0.95rem;
+}
+.details-buttons {
+  margin-top: 1rem;
+  display: flex;
+  gap: 1rem;
+}
+.btn-accept {
+  background: linear-gradient(to right, #16a34a, #22c55e);
+  color: #fff;
+  padding: 0.6rem 1.3rem;
+  border: none;
+  border-radius: var(--radius);
+  font-weight: 500;
+  text-decoration: none;
+  transition: var(--transition);
+}
+.btn-decline {
+  background: linear-gradient(to right, #dc2626, #ef4444);
+  color: #fff;
+  padding: 0.6rem 1.3rem;
+  border: none;
+  border-radius: var(--radius);
+  font-weight: 500;
+  text-decoration: none;
+  transition: var(--transition);
+}
+.btn-disabled {
+  background: #ccc;
+  border-radius: var(--radius);
+  padding: 0.6rem 1.3rem;
+  border: none;
+  cursor: not-allowed;
+}
+.btn-accept:hover, .btn-decline:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Messages & Empty State */
+.messages-container {
+  margin-bottom: 1.5rem;
+}
+.no-requests {
+  text-align: center;
+  color: #777;
+  font-size: 1rem;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInDetails {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .styled-table th, .styled-table td {
+    padding: 0.7rem;
+    font-size: 0.85rem;
+  }
+  .btn-view {
+    padding: 0.4rem 1rem;
+  }
+  .details-buttons {
+    flex-direction: column;
+  }
+}
+</style>
+
+{% endblock %}

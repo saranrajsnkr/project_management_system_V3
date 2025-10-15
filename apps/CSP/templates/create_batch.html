@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Batch{% endblock %}
+{% block content %}
+<style>
+:root {
+  --primary: #2563eb;
+  --accent: #0ea5e9;
+  --light-gray: #e2e8f0;
+  --radius: 10px;
+  --transition: all 0.3s ease;
+}
+
+.custom-card {
+  background: white;
+  padding: 2rem 3rem;
+  border-radius: var(--radius);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+  margin: 2rem auto;
+  max-width: 850px;
+  animation: fadeInUp 0.6s ease;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+h2 {
+  color: var(--primary);
+  text-align: center;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+input, textarea, select {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border: 2px solid var(--light-gray);
+  border-radius: var(--radius);
+  margin-bottom: 1rem;
+  background-color: #f8fafc;
+  transition: var(--transition);
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15);
+  background-color: white;
+}
+
+button {
+  background: linear-gradient(to right, var(--primary), var(--accent));
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.8rem 1.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: var(--transition);
+}
+button:hover {
+  transform: translateY(-3px);
+}
+
+.btn-secondary {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.alert-note {
+  background: #fef3c7;
+  border-left: 5px solid #f59e0b;
+  padding: 1rem;
+  border-radius: 8px;
+  color: #92400e;
+  font-size: 0.95rem;
+  margin-top: 1rem;
+}
+</style>
+
+<section>
+  <div class="custom-card">
+    <h2>Create Your Project Batch</h2>
+    {% if error %}
+      <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST">
+      {% csrf_token %}
+
+      <label class="fw-semibold">Add Batch Members</label>
+      <div id="memberList"></div>
+
+      <div class="member-actions" style="display:flex;gap:1rem;margin-bottom:1.5rem;">
+        <button type="button" id="addBtn" class="btn-secondary">+ Add Member</button>
+        <button type="button" id="removeBtn" class="btn-secondary" style="display:none;">− Remove Last</button>
+      </div>
+
+      <hr>
+
+      <label class="fw-semibold">Project Title</label>
+      <input type="text" name="title" required>
+
+      <label class="fw-semibold">Project Domain</label>
+      <input type="text" name="domain" required>
+
+      <label class="fw-semibold">Abstract</label>
+      <textarea name="abstract" rows="4" required></textarea>
+
+      <div class="alert-note">
+        ⚠️ You can add up to <strong>4 members</strong> (excluding yourself).
+      </div>
+
+      <div style="text-align:center;margin-top:2rem;">
+        <button type="submit">Create Batch</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<script>
+const students = [
+  {% for student in available_students %}
+    {id: "{{ student.id }}", name: "{{ student.name|escapejs }}", vtu: "{{ student.Id_number }}"},
+  {% endfor %}
+];
+
+let selected = [];
+const maxMembers = 4;
+
+function updateHiddenFields() {
+  document.querySelectorAll("input[name='members']").forEach(e => e.remove());
+  const form = document.querySelector("form");
+  selected.forEach(id => {
+    const hidden = document.createElement("input");
+    hidden.type = "hidden";
+    hidden.name = "members";
+    hidden.value = id;
+    form.appendChild(hidden);
+  });
+}
+
+// 🔹 Rerender dropdown options dynamically
+function refreshSelectOptions() {
+  document.querySelectorAll("#memberList select").forEach(select => {
+    const currentValue = select.value;
+    select.innerHTML = `<option value="">Select Student</option>` +
+      students
+        .filter(s => !selected.includes(s.id) || s.id === currentValue)
+        .map(s => `<option value="${s.id}">${s.name} - ${s.vtu}</option>`)
+        .join('');
+    select.value = currentValue;
+  });
+}
+
+function renderSelect() {
+  const list = document.getElementById("memberList");
+  const count = list.children.length;
+
+  if (count >= maxMembers) return;
+
+  const div = document.createElement("div");
+  div.className = "input-group";
+
+  const select = document.createElement("select");
+  select.innerHTML = `<option value="">Select Student</option>` +
+    students.map(s => `<option value="${s.id}">${s.name} - ${s.vtu}</option>`).join('');
+
+  select.addEventListener("change", e => {
+    const value = e.target.value;
+    const prev = e.target.dataset.prev;
+
+    // Remove previous value from selected if changed
+    if (prev && selected.includes(prev)) {
+      selected = selected.filter(v => v !== prev);
+    }
+
+    // Add new selected value if valid
+    if (value) {
+      selected.push(value);
+    }
+
+    e.target.dataset.prev = value;
+    updateHiddenFields();
+    refreshSelectOptions();
+  });
+
+  div.appendChild(select);
+  list.appendChild(div);
+  document.getElementById("removeBtn").style.display = "inline-block";
+
+  // Hide Add button if max limit reached
+  if (list.children.length >= maxMembers) {
+    document.getElementById("addBtn").style.display = "none";
+  }
+
+  refreshSelectOptions();
+}
+
+function removeLast() {
+  const list = document.getElementById("memberList");
+  const last = list.lastElementChild;
+  if (last) {
+    const val = last.querySelector("select").dataset.prev;
+    if (val) selected = selected.filter(v => v !== val);
+    last.remove();
+    updateHiddenFields();
+  }
+  document.getElementById("removeBtn").style.display = list.children.length > 0 ? "inline-block" : "none";
+
+  // Show Add button again when members < max
+  if (list.children.length < maxMembers) {
+    document.getElementById("addBtn").style.display = "inline-block";
+  }
+
+  refreshSelectOptions();
+}
+
+document.getElementById("addBtn").addEventListener("click", renderSelect);
+document.getElementById("removeBtn").addEventListener("click", removeLast);
+
+</script>
+{% endblock %}

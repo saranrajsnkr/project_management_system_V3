@@ -1,0 +1,381 @@
+{% extends "base.html" %} {% load static %} {% block content %}
+<div class="dashboard-container">
+  <div class="dashboard-card">
+    <div class="profile-header">
+      <div class="profile-avatar">
+        <span>{{ name|default:user.username|slice:":1" }}</span>
+      </div>
+      <h2>Welcome, {{ name|default:user.username }}</h2>
+    </div>
+
+    <div class="user-info">
+      <p><strong>Name:</strong> {{ name }}</p>
+      <p><strong>Username:</strong> {{ username }}</p>
+      <p><strong>Vtu Number:</strong> {{ Vtu_number }}</p>
+      <p><strong>Email:</strong> {{ user.email }}</p>
+      <hr />
+      <p>
+        <strong>Account Created:</strong> {{ user.date_joined|date:"d M Y" }}
+      </p>
+      <p>
+        <strong>Account Status:</strong>
+        {% if user.is_active %}
+        <span class="verified">Verified</span>
+        {% else %}
+        <span class="not-verified">Not Verified</span>
+        {% endif %}
+      </p>
+    </div>
+
+    <div class="actions">
+      {% comment %} <a href="{% url 'company_list' %}" class="action-btn primary">
+        <i class="fa-solid fa-briefcase" style="font-weight: bold"></i> Apply for Internship
+      </a> {% endcomment %}
+      <a href="{% url 'account_logout' %}" class="action-btn secondary" style="font-weight: bold">
+        <i class="fas fa-sign-out-alt"></i> Sign Out
+      </a>
+    </div>
+  </div>
+
+  {% if student_result %}
+  <div class="result-card">
+    <div class="card-header">
+      <h3><i class="fa-solid fa-school"></i> College Mode Application</h3>
+    </div>
+    <div class="card-body">
+      <p><strong>Name:</strong> {{ student_result.name }}</p>
+      <p><strong>Vtu Number:</strong> {{ student_result.roll_number }}</p>
+      <p><strong>Mobile Number:</strong> {{ student_result.mobile_number }}</p>
+      <p><strong>Department:</strong> {{ student_result.department }}</p>
+      <p><strong>Company:</strong> {{ student_result.applied_company.name }}</p>
+      <p>
+        <strong>Location:</strong> {{ student_result.applied_company.location }}
+      </p>
+      {% if site_setting.active_approval_letter or site_setting.active_undertaking_letter or site_setting.active_bonafide_letter %}
+      <hr />
+      <h3 class="required" style="margin-bottom: 0.8rem;"><i class="fa fa-tasks"></i> Required to be submitted</h3>     <!-- tasks list -->
+      {% endif %}
+      {% if site_setting.active_approval_letter %}
+      <p>
+        {% comment %} <strong>Approval Letter:</strong> {% endcomment %}
+        {% if student_result.approval_letter %}
+        <span class="verified"><i class="fa fa-circle-check"></i> Approval Letter</span>
+        {% else %}
+        <span class="not-verified"><i class="fa fa-circle-xmark"></i> Approval Letter</span>
+        {% endif %}
+      </p>
+      {% endif %}
+      {% if site_setting.active_undertaking_letter %}
+      <p>
+        {% comment %} <strong>Undertaking Letter:</strong> {% endcomment %}
+        {% if student_result.undertaking_letter %}
+        <span class="verified"><i class="fa fa-circle-check"></i> Undertaking Letter</span>
+        {% else %}
+        <span class="not-verified"><i class="fa fa-circle-xmark"></i> Undertaking Letter</span>
+        {% endif %}
+      </p>  
+      {% endif %}
+      {% if site_setting.active_bonafide_letter %}
+      <p>
+        {% comment %} <strong>Bonafide Letter:</strong> {% endcomment %}
+        {% if student_result.bonafide_letter %}
+        <span class="verified"><i class="fa fa-circle-check"></i> Bonafide Letter</span>
+        {% else %}
+        <span class="not-verified"><i class="fa fa-circle-xmark"></i> Bonafide Letter</span>
+        {% endif %}
+      </p>
+      {% endif %}
+      {% if site_setting.active_approval_letter or site_setting.active_undertaking_letter or site_setting.active_bonafide_letter %}
+        {% if not student_result.approval_letter or not student_result.undertaking_letter or not student_result.bonafide_letter %}
+        <button class="upload-button" onclick="window.location.href='{% url 'upload_documents' %}'" style="font-weight: bold;"><i class="fa fa-cloud-upload"></i> Upload Documents</button>
+        {% endif %}
+        {% endif %}
+      </div>
+  </div>
+  {% endif %}
+</div>
+<style>
+    .dashboard-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px;
+    }
+
+    .dashboard-card, .result-card {
+      background: var(--bg-card);
+          backdrop-filter: blur(16px);
+
+      border-radius: 20px;
+      padding: 30px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+      animation: fadeInUp 0.8s ease-out forwards;
+    }
+    @keyframes fadeInUp {
+      0% {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      }
+    .profile-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .profile-avatar {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+        background: linear-gradient(to right, var(--primary), var(--accent));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      color: #fff;
+      font-weight: 600;
+      margin: 0 auto 10px;
+    }
+
+    h2 {
+      font-size: 1.6rem;
+      font-weight: 600;
+      color: #222;
+    }
+
+    .user-info {
+      font-size: 1rem;
+      margin: 20px 0;
+      color: #555;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid #eee;
+      margin: 10px 0;
+    }
+
+    .verified { color: green; font-weight: 600; }
+    .not-verified { color: red; font-weight: 600; }
+  .actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+    justify-content: center;
+  }
+
+  .action-btn {
+    flex: 1; /* equal space */
+    text-align: center;
+    padding: 14px 0;
+    border-radius: var(--radius, 8px);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    min-width: 140px; /* optional: keeps button readable on PC */
+  }
+
+  /* Primary button */
+  .action-btn.primary {
+    background: linear-gradient(to right, var(--primary, #2563eb), var(--accent, #3b82f6));
+    color: #fff;
+  }
+
+  .action-btn.primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 25px rgba(37, 99, 235, 0.45);
+  }
+
+  /* Secondary button */
+  .action-btn.secondary {
+    background: #f5f5f5;
+    color: #333;
+  }
+
+  .action-btn.secondary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Mobile fix: stack buttons */
+  @media (max-width: 640px) {
+    .actions {
+      flex-direction: column;
+    }
+  }
+
+  .result-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      transition: var(--transition);
+      animation: fadeInUp 0.6s ease-out forwards;
+  }
+
+  @keyframes fadeInleft {
+      0% {
+          opacity: 0;
+          transform: translateX(-20px);
+      }
+      100% {
+          opacity: 1;
+          transform: translateX(0);
+      }
+  }
+  .result-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+  }
+
+  .card-header {
+      {% comment %} background: linear-gradient(to right, var(--primary), var(--accent)); {% endcomment %}
+      color: black;
+      padding: 1rem 1.5rem;
+      font-weight: 600;
+  }
+
+  .card-body {
+      padding: 0rem 1.5rem 1.5rem 1.5rem;
+      color: #1f2937;
+  }
+
+  .card-body p {
+      margin-bottom: 0.8rem;
+  }
+
+
+    /* Responsive for small devices */
+    @media (max-width: 768px) {
+      .dashboard-container {
+        flex-direction: column;
+        padding: 20px;
+        align-items: center;
+      }
+
+      .dashboard-card, .result-card {
+        max-width: 95%;
+        padding: 20px;
+      }
+
+      h2 { font-size: 1.4rem; }
+    }
+
+    /* Attendance Section */
+.attendance-section {
+  margin-bottom: 50px;
+  width: 100%;
+  max-width: 90%;
+  margin-left: auto;
+  margin-right: auto;
+}
+.attendance-card:hover {
+  box-shadow: 0 12px 25px rgba(37, 99, 235, 0.25);
+  transition: box-shadow 0.3s ease-in;
+}
+
+.attendance-section h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  text-align: center;
+  color: #222;
+}
+
+/* Attendance Card Wrapper */
+.attendance-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  border-radius: 20px;
+  padding: 25px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  animation: fadeInUp 0.8s ease-out forwards;
+  overflow-x: auto;
+}
+
+/* Attendance Table */
+.attendance-card table {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.attendance-card thead {
+  background: linear-gradient(to right, var(--primary), var(--accent));
+  color: #fff;
+}
+
+.attendance-card th,
+.attendance-card td {
+  padding: 14px 16px;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.attendance-card tbody tr:nth-child(even) {
+  background: #f9fafb;
+}
+
+.attendance-card tbody tr:nth-child(odd) {
+  background: #ffffff;
+}
+
+.attendance-card tbody tr:hover {
+  background: #eef6ff;
+  transition: background 0.3s ease;
+}
+
+/* Status Labels */
+.attendance-card td:last-child {
+  font-weight: 600;
+}
+
+.attendance-card td:last-child:contains("Present") {
+  color: #16a34a;
+}
+
+.attendance-card td:last-child:contains("Absent") {
+  color: #dc2626;
+}
+
+.status-present {
+  color: green;
+  font-weight: bold;
+}
+.status-absent {
+  color: red;
+  font-weight: bold;
+}
+    .upload-button {
+      display: inline-block;   /* 👈 add this */
+      margin-top: auto;
+      align-self: flex-start;
+      padding: 0.7rem 1.6rem;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #fff;
+      background: linear-gradient(to right, var(--primary), var(--accent));
+      border-radius: var(--radius);
+      text-decoration: none;
+      transition: var(--transition);
+      box-shadow: 0 6px 15px rgba(37, 99, 235, 0.35);
+      border: none;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+    .upload-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 25px rgba(37, 99, 235, 0.45);
+    }
+
+</style>
+{% endblock %}

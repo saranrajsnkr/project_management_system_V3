@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% block title %}Accepted Batches{% endblock %}
+{% block content %}
+
+<section class="accepted-section">
+  <h2 class="section-title">Accepted Batches</h2>
+
+  {% if accepted_requests %}
+  <div class="table-container">
+    <table class="modern-table">
+      <thead>
+        <tr>
+          <th>Batch ID</th>
+          <th>Leader</th>
+          <th>Members</th>
+          <th>Project Title</th>
+          <th>Domain</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in accepted_requests %}
+        <tr>
+          <td>{{ req.batch.id }}</td>
+          <td>{{ req.batch.batch_leader.name }}</td>
+          <td>
+            {% for m in req.batch.members.all %}
+              {{ m.name }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+          </td>
+          <td>{{ req.batch.project.title }}</td>
+          <td>{{ req.batch.project.domain }}</td>
+          <td>
+            <a href="{% url 'view_batch_details' req.batch.id %}" class="view-btn">
+              <i class="fa-solid fa-eye"></i> View Details
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="no-batches">No accepted batches yet.</p>
+  {% endif %}
+</section>
+
+<style>
+/* --- Section Styling --- */
+.accepted-section {
+  background: linear-gradient(to bottom right, #f9fbff, #eef4ff);
+  padding: 2rem;
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+.section-title {
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #1e3a8a;
+  margin-bottom: 2rem;
+  font-family: "Poppins", sans-serif;
+  position: relative;
+}
+.section-title::after {
+  content: "";
+  display: block;
+  width: 90px;
+  height: 3px;
+  background: linear-gradient(to right, #2563eb, #06b6d4);
+  margin: 8px auto 0;
+  border-radius: 5px;
+}
+
+/* --- Table Styling --- */
+.table-container {
+  overflow-x: auto;
+  background: #fff;
+  border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  padding: 1rem;
+}
+
+.modern-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 12px;
+  overflow: hidden;
+  font-family: "Poppins", sans-serif;
+  background: #fff;
+}
+
+.modern-table thead tr {
+  background: linear-gradient(to right, #2563eb, #06b6d4);
+  color: #fff;
+}
+
+.modern-table th,
+.modern-table td {
+  padding: 14px 16px;
+  text-align: left;
+  font-size: 0.95rem;
+}
+
+.modern-table tbody tr {
+  border-bottom: 1px solid #e5e7eb;
+  transition: 0.3s ease;
+}
+
+.modern-table tbody tr:hover {
+  background-color: #f3f6ff;
+  transform: scale(1.01);
+}
+
+/* --- View Button --- */
+.view-btn {
+  background: linear-gradient(to right, #2563eb, #06b6d4);
+  color: #fff;
+  border: none;
+  border-radius: 25px;
+  padding: 8px 18px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+}
+.view-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(6, 182, 212, 0.45);
+}
+
+/* --- No Data --- */
+.no-batches {
+  text-align: center;
+  font-weight: 600;
+  color: #6b7280;
+  margin-top: 2rem;
+}
+
+/* --- Animations --- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+
+{% endblock %}

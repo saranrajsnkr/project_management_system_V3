@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block title %}Batch Details{% endblock %}
+{% block content %}
+
+<div class="card shadow-lg p-5 mt-4">
+  <h3 class="text-primary mb-4">Batch Details</h3>
+
+  <div class="batch-info">
+    <p><strong>Batch ID:</strong> {{ req.batch.id }}</p>
+    <p><strong>Leader:</strong> {{ req.batch.batch_leader.name }}</p>
+    <p><strong>Members:</strong>
+      {% for m in req.batch.members.all %}
+        {{ m.name }}{% if not forloop.last %}, {% endif %}
+      {% endfor %}
+    </p>
+    <p><strong>Project Title:</strong> {{ req.batch.project.title }}</p>
+    <p><strong>Domain:</strong> {{ req.batch.project.domain }}</p>
+    <p><strong>Abstract:</strong> {{ req.batch.project.abstract }}</p>
+  </div>
+
+  <div class="text-end mt-4">
+    <a href="{% url 'accepted_batches' %}" class="btn btn-secondary">← Back</a>
+  </div>
+</div>
+
+<style>
+.card {
+  background: #fff;
+  border-radius: 15px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  font-family: "Poppins", sans-serif;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.batch-info p {
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+.btn-secondary {
+  background: linear-gradient(to right, #94a3b8, #64748b);
+  border: none;
+  color: #fff;
+  border-radius: 25px;
+  padding: 8px 18px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+.btn-secondary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 18px rgba(100, 116, 139, 0.4);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+
+{% endblock %}

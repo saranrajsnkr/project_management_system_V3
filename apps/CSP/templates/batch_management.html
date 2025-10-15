@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% block title %}Batch Management{% endblock %}
+{% block content %}
+
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --accent: #0ea5e9;
+  --success: #16a34a;
+  --danger: #dc2626;
+  --warning: #facc15;
+  --light-gray: #e2e8f0;
+  --text-dark: #1e293b;
+  --radius: 12px;
+  --transition: all 0.3s ease;
+  --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1),
+             0 8px 10px -6px rgba(0, 0, 0, 0.05);
+}
+
+.card {
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 2rem 3rem;
+  max-width: 850px;
+  margin: 2rem auto;
+  font-family: "Poppins", sans-serif;
+  animation: fadeInUp 0.6s ease;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+h3, h4, h5 {
+  font-weight: 600;
+  color: var(--primary-dark);
+  margin-bottom: 1rem;
+}
+
+ul {
+  list-style: none;
+  padding-left: 0;
+}
+{% comment %} .member-list li {
+  padding: 0.4rem 0.8rem;
+  background: #f8fafc;
+  margin-bottom: 0.5rem;
+  border-radius: 6px;
+  border-left: 4px solid var(--primary);
+} {% endcomment %}
+
+p {
+  color: var(--text-dark);
+  font-size: 1rem;
+  margin-bottom: 0.6rem;
+}
+
+hr {
+  border: none;
+  height: 1px;
+  background-color: var(--light-gray);
+  margin: 1.5rem 0;
+}
+
+.badge {
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+.bg-warning {
+  background-color: #fef08a;
+  color: #713f12;
+}
+.bg-success {
+  background-color: #bbf7d0;
+  color: #166534;
+}
+.bg-danger {
+  background-color: #fecaca;
+  color: #7f1d1d;
+}
+
+.btn {
+  display: inline-block;
+  padding: 0.8rem 1.4rem;
+  border-radius: var(--radius);
+  font-weight: 600;
+  transition: var(--transition);
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: linear-gradient(to right, var(--primary), var(--accent));
+  color: white;
+  border: none;
+  box-shadow: 0 5px 15px rgba(37, 99, 235, 0.3);
+}
+.btn-primary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4);
+}
+
+.text-primary { color: var(--primary); }
+.text-success { color: var(--success); }
+.text-info { color: var(--accent); }
+
+.badge {
+  display: inline-block;
+  padding: 0.35rem 0.7rem;
+  border-radius: 8px;
+  font-weight: 500;
+}
+</style>
+
+<div class="card">
+  <h3 class="text-primary mb-4">Your Batch Details</h3>
+
+  <p><strong>Leader:</strong> {{ batch.batch_leader.name }}</p>
+  <p><strong>Members:</strong></p>
+  <ul class="member-list">
+    {% for m in batch.members.all %}
+      <li>{{ m.name }} ({{ m.Id_number }})</li>
+    {% endfor %}
+  </ul>
+
+  <hr>
+
+  {% if project %}
+    <h4 class="text-success">Project Details</h4>
+    <p><strong>Title:</strong> {{ project.title }}</p>
+    <p><strong>Domain:</strong> {{ project.domain }}</p>
+    <p><strong>Abstract:</strong> {{ project.abstract }}</p>
+  {% else %}
+    <p>No project found for this batch.</p>
+  {% endif %}
+
+  <hr>
+
+  <h5 class="text-info">Supervisor Request</h5>
+  {% if supervisor_request %}
+    <p><strong>Supervisor:</strong> {{ supervisor_request.supervisor.name }}</p>
+    <p><strong>Status:</strong>
+      {% if supervisor_request.status == "Pending" %}
+        <span class="badge bg-warning">Pending</span>
+      {% elif supervisor_request.status == "Accepted" %}
+        <span class="badge bg-success">Accepted</span>
+      {% else %}
+        <span class="badge bg-danger">Declined</span><br>
+        <a href="{% url 'request_supervisor' %}" class="btn btn-primary" style="margin-top: 1rem">Request Supervisor</a>
+
+      {% endif %}
+    </p>
+  {% else %}
+    <a href="{% url 'request_supervisor' %}" class="btn btn-primary">Request Supervisor</a>
+  {% endif %}
+</div>
+
+{% endblock %}

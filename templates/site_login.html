@@ -1,0 +1,173 @@
+{% load static %}
+{% load socialaccount %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PMS - Login</title>
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <meta name="theme-color" content="#ffffff" id="theme-color-meta">
+  <meta name="description" content="The IMS (Internship Management System) - VelTech  helps students apply for internship opportunities offered through the college with ease and organization.">
+  <meta property="og:title" content="IMS - VelTech" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://internship-portal-i31y.onrender.com/" />
+  <meta property="og:image" content="https://res.cloudinary.com/dvmocwdnn/image/upload/v1751663804/VELTECH_OG_CARD_1_mliesn.jpg" />
+  <meta property="og:description" content="The IMS (Internship Management System) is an online platform to apply for internships directly from the college." />
+
+  <link rel="icon" type="image/x-icon" href="{% static 'images/LOGO.png' %}" />
+
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1e40af;
+      --background: linear-gradient(135deg, #e0f2fe, #f0f9ff);
+      --glass-bg: rgba(255, 255, 255, 0.2);
+      --glass-border: rgba(255, 255, 255, 0.4);
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      --radius: 20px;
+      --transition: all 0.3s ease-in-out;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      font-family: 'Inter', sans-serif;
+      background: var(--background);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .login-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: 40px 30px;
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(20px) saturate(180%);
+      animation: fadeIn 0.6s ease-in-out;
+    }
+
+    .logos {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .logos img {
+      height: 50px;
+      object-fit: contain;
+    }
+
+    .portal-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 25px;
+      letter-spacing: 0.5px;
+    }
+
+    .google-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px 20px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 30px;
+      font-weight: 500;
+      font-size: 15px;
+      color: #111;
+      text-decoration: none;
+      transition: var(--transition);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    .google-btn:hover {
+      background: #f9fafb;
+      transform: translateY(-1px);
+    }
+
+    .google-btn img {
+      height: 22px;
+    }
+
+    .note {
+      margin-top: 20px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .alert-domain_error {
+      margin-top: 15px;
+      padding: 8px 12px;
+      border: 1px solid #fca5a5;
+      background: #fee2e2;
+      color: #991b1b;
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Mobile */
+    @media (max-width: 480px) {
+      .logos img { height: 40px; }
+      .portal-title { font-size: 1.2rem; }
+      .login-card { padding: 30px 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <!-- Logos -->
+    <div class="logos">
+      <img src="{% static 'images/VELTECH.png' %}" alt="VelTech Logo">
+      <img src="{% static 'images/NIRF.png' %}" alt="Category 1">
+      <img src="{% static 'images/NAAC.png' %}" alt="NAAC">
+    </div>
+
+    <!-- Title -->
+    <div class="portal-title">Project Management System - AIML</div>
+
+    <!-- Google Login -->
+    <a href="{% provider_login_url 'google' %}" class="google-btn">
+      <img src="https://www.gstatic.com/marketing-cms/assets/images/d5/dc/cfe9ce8b4425b410b49b7f2dd3f3/g.webp=s48-fcrop64=1,00000000ffffffff-rw" alt="Google logo"/>
+      Continue with Google
+    </a>
+
+    {% if messages %}
+      {% for message in messages %}
+        {% if "domain_error" in message.tags and forloop.first %}
+          <div class="alert-domain_error">
+            {{ message }}
+          </div>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+
+
+    <!-- Note -->
+    <div class="note">Use your official VelTech email to log in.</div>
+  </div>
+</body>
+</html>

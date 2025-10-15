@@ -1,0 +1,176 @@
+{% extends 'base.html' %} {% load static %} {% block content %} {% comment %}
+<h1>Welcome, {{ name|upper }}!</h1>
+{% endcomment %}
+<h1 class="page-title" id="typing-text"></h1>
+
+<style>
+  /* Add blinking cursor */
+  #typing-text::after {
+    content: "|";
+    display: inline-block;
+    margin-left: 2px;
+    color: #007bff; /* cursor color */
+    animation: blink 0.7s infinite;
+  }
+
+  @keyframes blink {
+    0%,
+    50% {
+      opacity: 1;
+    }
+    50.01%,
+    100% {
+      opacity: 0;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const text = "Welcome, {{ name|upper }}!";
+    let i = 0;
+    const speed = 100;
+    const target = document.getElementById("typing-text");
+
+    function typeWriter() {
+      if (i < text.length) {
+        target.innerHTML += text.charAt(i);
+        i++;
+        setTimeout(typeWriter, speed);
+      }
+    }
+
+    typeWriter();
+  });
+</script>
+
+<p class="fade-in" style="margin-bottom: 1rem">
+  {{ email }} {% if is_admin %}
+  <span class="span" style="font-weight: 500">(Admin Access Enabled)</span>{% endif %}
+</p>
+
+{% if announcement.message1 and announcement.is_message1_active %}
+<div class="announcement-box">
+  <p class="announcement-text" style="color: {{ announcement.message1_color }}">
+    {% comment %} <span class="span">Announcement:</span>{% endcomment %}<i class="fa fa-bullhorn"></i>  {{ announcement.message1 }}
+  </p>
+</div>
+{% endif %}
+
+<style>
+  .fade-in {
+    opacity: 0;
+    animation: fadeIn 1s ease-in forwards;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(0px); /* slight upward motion */
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .span {
+    color: var(--text-dark) !important;
+    font-weight: 1000;
+    font-size: 1.1rem;
+  }
+  .announcement-box {
+    margin-top: 1.5rem;
+    background: rgba(37, 99, 235, 0.05);
+    border-left: 4px solid var(--primary);
+    padding: 1rem;
+    border-radius: var(--radius);
+    margin-bottom: 1.5rem;
+    text-align: center;
+    animation: fadeInUp 0.6s ease forwards;
+  }
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .announcement-text {
+    font-weight: 600;
+    font-size: 1rem;
+  }
+</style>
+<div class="card-grid">
+  <div class="card-wrapper">
+    <div
+      class="card"
+      onclick="window.location.href='{% url 'account_dashboard' %}'"
+    >
+      <i class="bi bi-person-circle"></i>
+      <h3>Profile & Dashboard</h3>
+      <p>
+        View your profile and get a quick overview of your activities in one
+        place.
+      </p>
+    </div>
+  </div>
+  <div class="card-wrapper">
+    <div
+      class="card"
+  {% if user_role in "HOD,Associate Professor,Assistant Professor,Professor" %}
+    onclick="window.location.href='{% url 'accepted_batches' %}'"
+  {% else %}
+    onclick="window.location.href='{% url 'batch_management' %}'"
+  {% endif %}
+    >
+      <i class="bi bi-people-fill"></i>
+      <h3>Batch Management</h3>
+        {% if user_role in "HOD,Associate Professor,Assistant Professor,Professor" %}
+        <p>
+          View and manage batches assigned to you as a supervisor.
+        </p>
+        {% else %}
+      <p>
+        Create and manage project batches, assign members, and oversee project
+        details.
+      </p>
+        {% endif %}
+
+    </div>
+  </div>
+  {% if user_role in "HOD,Associate Professor,Assistant Professor,Professor" %}
+  <div class="card-wrapper">
+    <div
+      class="card"
+      onclick="window.location.href='{% url 'supervisor_dashboard' %}'"
+    >
+      <i class="bi bi-person-check"></i>
+      <h3>Supervisor Requests</h3>
+      <p>
+        Review and manage project supervision requests from student batches.
+      </p>
+    </div>
+  </div>
+  {% endif %}
+  <div class="card-wrapper">
+    <div
+      class="card"
+      onclick="window.location.href='{% url 'downloadable_files' %}'"
+    >
+      <i class="fa fa-cloud-download"></i>
+      <h3>Download Documents</h3>
+      <p>
+        Students can download the necessary forms to fill up and submit as part
+        of the internship process.
+      </p>
+    </div>
+  </div>
+
+</div>
+
+
+{% endblock %}
