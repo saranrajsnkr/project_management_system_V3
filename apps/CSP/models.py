@@ -15,6 +15,7 @@ class Project(models.Model):
     batch = models.OneToOneField(Batch, on_delete=models.CASCADE, related_name='project')
     title = models.CharField(max_length=200)
     domain = models.CharField(max_length=100)
+    Targeted_Journals = models.CharField(max_length=200, blank=True, null=True)
     abstract = models.TextField()
     supervisor = models.ForeignKey(
         dept_member,

@@ -8,7 +8,9 @@ from django.db.models import F
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from reportlab.lib.enums import TA_RIGHT
+from reportlab.lib.enums import TA_RIGHT, TA_LEFT
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.pdfgen import canvas
 
 
 @login_required
@@ -237,6 +239,27 @@ def update_request_status(request, request_id, action):
             project.supervisor = supervisor
             project.save()
 
+
+        # Define the batch number
+        batch_number = getattr(batch, "batch_number", "N/A")  # replace with your batch attribute
+
+        # Function to draw batch number on every page
+        def add_batch_number(c, doc):
+            """
+            c: canvas object
+            doc: the document object
+            """
+            c.saveState()
+            # Set font and size
+            c.setFont("Times-Roman", 10)
+            # Draw batch number at top-right corner
+            page_width, page_height = A4
+            c.drawRightString(page_width - 60, page_height - 30, f"CSP - Batch No: {batch.id}")
+            c.restoreState()
+
+        # When building the PDF, pass the onPage argument
+
+
         # === PDF GENERATION ===
         buffer = BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4,
@@ -246,7 +269,7 @@ def update_request_status(request, request_id, action):
         title_style = ParagraphStyle('title', fontSize=14, alignment=TA_CENTER, spaceAfter=10, fontName='Times-Bold')
         subtitle_style = ParagraphStyle('subtitle', fontSize=11, alignment=TA_CENTER, spaceAfter=6, fontName='Times-BoldItalic')
         normal_style = ParagraphStyle('normal', fontSize=11, leading=15, fontName='Times-Roman')
-        justify_style = ParagraphStyle('justify', fontSize=9, leading=14, fontName='Times-Roman', alignment=TA_JUSTIFY)
+        justify_style = ParagraphStyle('justify', fontSize=10.5, leading=14, fontName='Times-Roman', alignment=TA_JUSTIFY)
 
         content = []
         def auto_width_image(path, fixed_height):
@@ -317,7 +340,7 @@ def update_request_status(request, request_id, action):
         # Project Info Table
         project_table = [
             [
-                Paragraph("<b>TITLE:</b>", wrap_style),
+                Paragraph("<b>PROJECT TITLE:</b>", wrap_style),
                 Paragraph(getattr(batch.project, "title", "N/A"), wrap_style),
             ],
             [
@@ -325,8 +348,8 @@ def update_request_status(request, request_id, action):
                 Paragraph(getattr(batch.project, "domain", "N/A"), wrap_style),
             ],
             [
-                Paragraph("<b>Targeted Journal (if any):</b>", wrap_style),
-                Paragraph("_________________________", wrap_style),
+                Paragraph("<b>TARGETED JOURNAL:</b>", wrap_style),
+                Paragraph(getattr(batch.project, "Targeted_Journals", "N/A"), wrap_style),
             ],
         ]
 
@@ -384,8 +407,7 @@ def update_request_status(request, request_id, action):
 
         # Supervisor Section
         supervisor_table = [
-            ["NAME OF THE SUPERVISOR:", f"{supervisor.name} - {supervisor.Id_number}"],
-            ["SIGNATURE:", "_________________________"],
+            ["NAME OF THE SUPERVISOR:", f"{supervisor.name}({supervisor.Id_number})"],
             ["DATE:", str(datetime.date.today())],
         ]
         t2 = Table(supervisor_table, colWidths=[180, 300])
@@ -401,24 +423,31 @@ def update_request_status(request, request_id, action):
 
 
 
-        # create a right-aligned style that inherits your normal_style
-        right_style = ParagraphStyle('right', parent=normal_style, alignment=TA_RIGHT)
+        left_style = ParagraphStyle('left', alignment=TA_LEFT, fontName='Times-Roman', fontSize=11)
+        right_style = ParagraphStyle('right', alignment=TA_RIGHT, fontName='Times-Roman', fontSize=11)
 
-        # signature paragraph
-        hod_signature = Paragraph("<b>(Signature of Head of the Department)</b>", right_style)
+        # Create bold paragraphs for each signature
+        coordinator_sign = Paragraph("<b>(Sign of Project Supervisor)</b>", left_style)
+        supervisor_sign = Paragraph("<b>(Sign of Head of the Department)</b>", right_style)
 
-        # use doc.width so the table spans the usable page width
-        hod_table = Table([[hod_signature]], colWidths=[doc.width])
-        hod_table.setStyle(TableStyle([
-            ("ALIGN", (0,0), (-1,-1), "RIGHT"),
-            ("LEFTPADDING", (0,0), (-1,-1), 0),
-            ("RIGHTPADDING", (0,0), (-1,-1), 0),
-            ("TOPPADDING", (0,0), (-1,-1), 0),
-            ("BOTTOMPADDING", (0,0), (-1,-1), 0),
+        # Create table with two columns
+        sign_table2 = Table(
+            [[coordinator_sign, supervisor_sign]],
+            colWidths=[250, 250]  # Adjust widths to fit your page (e.g., A4 → 500 total)
+        )
+
+        # Apply table styling
+        sign_table2.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 20),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 20),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+            ("TOPPADDING", (0, 0), (-1, -1), 10),
         ]))
 
-        content.append(Spacer(1, 60))
-        content.append(hod_table)
+        # Add spacing before the table and append to content
+        content.append(Spacer(1, 70))
+        content.append(sign_table2)
 
 
 
@@ -450,6 +479,7 @@ def update_request_status(request, request_id, action):
             pass
 
         content += [
+            Spacer(1, 5),   
             Paragraph("SCHOOL OF COMPUTING", subtitle_style),
             Paragraph("DEPARTMENT OF ARTIFICIAL INTELLIGENCE & MACHINE LEARNING", subtitle_style),
             Spacer(1, 8),
@@ -474,7 +504,7 @@ def update_request_status(request, request_id, action):
             ],
             [
                 Paragraph("<b>SUPERVISOR NAME:</b>", wrap_style),
-                Paragraph( f"{supervisor.name} - {supervisor.Id_number}", wrap_style),
+                Paragraph( f"{supervisor.name}({supervisor.Id_number})", wrap_style),
             ],
         ]
 
@@ -530,34 +560,49 @@ def update_request_status(request, request_id, action):
         content.append(Spacer(1, 50))
         
         
-        # Define a centered paragraph style
-        center_style = ParagraphStyle('center', alignment=TA_CENTER, fontName='Times-Roman', fontSize=11)
+        left_style = ParagraphStyle('left', alignment=TA_LEFT, fontName='Times-Roman', fontSize=11)
+        right_style = ParagraphStyle('right', alignment=TA_RIGHT, fontName='Times-Roman', fontSize=11)
 
-        # Create bold paragraphs properly
-        coordinator_sign = Paragraph("<b>(Sign of Project Coordinator)</b>", center_style)
-        supervisor_sign = Paragraph("<b>(Sign of Project Supervisor)</b>", center_style)
+        # Create bold paragraphs for each signature
+        coordinator_sign = Paragraph("<b>(Sign of Project Supervisor)</b>", left_style)
+        supervisor_sign = Paragraph("<b>(Sign of Deptartment CSP Coordinator)</b>", right_style)
 
-        # Table with two columns (match colWidths length)
+        # Create table with two columns
         sign_table2 = Table(
             [[coordinator_sign, supervisor_sign]],
-            colWidths=[250, 250]  # Adjust width as needed for page size
+            colWidths=[250, 250]  # Adjust widths to fit your page (e.g., A4 → 500 total)
         )
 
-        # Style for alignment and clean borders
+        # Apply table styling
         sign_table2.setStyle(TableStyle([
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 20),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 20),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+            ("TOPPADDING", (0, 0), (-1, -1), 10),
         ]))
 
+        # Add spacing before the table and append to content
+        content.append(Spacer(1, 70))
         content.append(sign_table2)
 
         # === Build PDF ===
-        doc.build(content)
+        doc.build(content, onFirstPage=add_batch_number, onLaterPages=add_batch_number)
         buffer.seek(0)
 
-        upload = cloudinary.uploader.upload(buffer, resource_type="auto")
-        pdf_url = upload.get("secure_url")
+        # Construct filename dynamically using batch number
+        batch_number = getattr(batch, "id", "N/A")
+        file_name = f"supervisor_selection_and_abstract_form.pdf"
+
+        # Upload to Cloudinary
+        upload_result = cloudinary.uploader.upload(
+            buffer,
+            public_id=file_name,  # sets the "path" + filename in Cloudinary
+            resource_type="auto",
+            folder=f"VELTECH/CSP/batch_{batch.id}",
+            overwrite=True  # optional: overwrite if it exists
+        )
+        pdf_url = upload_result.get("secure_url")
         batch.pdf_report = pdf_url
         batch.save()
 

@@ -23,6 +23,7 @@ class dept_member(models.Model):
     
     name = models.CharField(max_length=100)
     Id_number = models.CharField("VTU/TTS Number", max_length=20, unique=True, help_text="Enter VTU/TTS Number", blank=True, null=True)
+    reg_no = models.CharField("Registration Number", max_length=20, unique=True, help_text="Enter Registration Number", blank=True, null=True)
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=15, blank=True, null=True)
     role = models.CharField(max_length=50, choices=Role_choices, blank=True, null=True)
