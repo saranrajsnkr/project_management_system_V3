@@ -8,6 +8,8 @@ from django.db.models import F
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from reportlab.lib.enums import TA_RIGHT
+
 
 @login_required
 def batch_management(request):
@@ -224,7 +226,7 @@ def update_request_status(request, request_id, action):
 
     if action == "accept":
         if supervisor_mgmt.max_batches <= 0:
-            messages.error(request, "You have reached your supervision limit.")
+            messages.error(request, "You have reached your supervision limit.", extra_tags="user")
             return redirect("supervisor_dashboard")
 
         sup_request.status = "Accepted"
@@ -244,55 +246,111 @@ def update_request_status(request, request_id, action):
         title_style = ParagraphStyle('title', fontSize=14, alignment=TA_CENTER, spaceAfter=10, fontName='Times-Bold')
         subtitle_style = ParagraphStyle('subtitle', fontSize=11, alignment=TA_CENTER, spaceAfter=6, fontName='Times-BoldItalic')
         normal_style = ParagraphStyle('normal', fontSize=11, leading=15, fontName='Times-Roman')
-        justify_style = ParagraphStyle('justify', fontSize=10.5, leading=14, fontName='Times-Roman', alignment=TA_JUSTIFY)
+        justify_style = ParagraphStyle('justify', fontSize=9, leading=14, fontName='Times-Roman', alignment=TA_JUSTIFY)
 
         content = []
         def auto_width_image(path, fixed_height):
-            """Return a ReportLab Image with fixed height and proportional width"""
+            """Return an Image with fixed height and proportional width."""
             img = ImageReader(path)
             iw, ih = img.getSize()
             aspect = iw / float(ih)
             return Image(path, width=fixed_height * aspect, height=fixed_height)
-        # === PAGE 1 (same as before) ===
+
+        # === SINGLE CENTERED LOGO ===
         try:
-            logos = [
-                auto_width_image("static/images/VELTECH.png", 1.1 * inch),
-                auto_width_image("static/images/NAAC.png", 1.1 * inch),
-                auto_width_image("static/images/NIRF.png", 1.1 * inch),
-            ]
-            logo_row = Table([[logos[0], logos[1], logos[2]]], colWidths=[2*inch]*3)
-            logo_row.setStyle(TableStyle([("ALIGN", (0, 0), (-1, -1), "CENTER")]))
-            content.append(logo_row)
+            # Fixed logo height — slightly smaller to fit neatly
+            fixed_height = 1 * inch
+            logo = auto_width_image("static/images/FULL_VELTECH_LOGO.png", fixed_height)
+
+            # Center the logo exactly in the middle without spacing
+            logo_table = Table([[logo]], colWidths=[6.5 * inch])
+            logo_table.setStyle(TableStyle([
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+            ]))
+
+            # Add the table directly — no extra Spacer
+            content.append(logo_table)
+
+
+
         except:
             pass
 
         content += [
-            Paragraph("<b>DEPARTMENT OF ARTIFICIAL INTELLIGENCE & MACHINE LEARNING (AIML)</b>", subtitle_style),
+            Spacer(1, 5),   
             Paragraph("SCHOOL OF COMPUTING", subtitle_style),
+            Paragraph("<b>DEPARTMENT OF ARTIFICIAL INTELLIGENCE & MACHINE LEARNING (AIML)</b>", subtitle_style),
             Spacer(1, 10),
-            Paragraph("<b>PROJECT SUPERVISOR SELECTION FORM – COMMUNITY SERVICE PROJECT</b>", title_style),
-            Paragraph("10214AM501 - COMMUNITY SERVICE PROJECT | B.Tech - AIML", subtitle_style),
-            Paragraph("Academic Year: 2024-2025 (Winter Semester)", subtitle_style),
+            Paragraph("<b>PROJECT SUPERVISOR SELECTION FORM</b>", title_style),
+            Paragraph("10214AM501 / COMMUNITY SERVICE PROJECT", subtitle_style),
+            Paragraph("ACADEMIC YEAR: 2024-2025", subtitle_style),
+            Paragraph("SEMESTER: WINTER", subtitle_style),
             Spacer(1, 15),
             Paragraph("I have read and understood the guidelines of the B.Tech. VTR-21 Regulations. "
                       "The details of our Community Service Project area of work are given below:", normal_style),
             Spacer(1, 12),
         ]
 
-        # Project Info
+        # Paragraph style for wrapping long text
+        wrap_style = ParagraphStyle(
+            "wrap_style",
+            fontName="Times-Roman",
+            fontSize=11,
+            leading=14,
+            textColor=colors.black,
+        )
+
+        # Define a wrapping style for paragraphs
+        wrap_style = ParagraphStyle(
+            name="wrap_style",
+            fontName="Times-Roman",
+            fontSize=11,
+            leading=13,
+            alignment=TA_JUSTIFY,
+        )
+
+        # Project Info Table
         project_table = [
-            ["TITLE:", getattr(batch.project, "title", "N/A")],
-            ["MAJOR AREA (Domain):", getattr(batch.project, "domain", "N/A")],
-            ["Targeted Journal (if any):", "_________________________"]
+            [
+                Paragraph("<b>TITLE:</b>", wrap_style),
+                Paragraph(getattr(batch.project, "title", "N/A"), wrap_style),
+            ],
+            [
+                Paragraph("<b>DOMAIN:</b>", wrap_style),
+                Paragraph(getattr(batch.project, "domain", "N/A"), wrap_style),
+            ],
+            [
+                Paragraph("<b>Targeted Journal (if any):</b>", wrap_style),
+                Paragraph("_________________________", wrap_style),
+            ],
         ]
-        t1 = Table(project_table, colWidths=[180, 300])
+
+        # Adjusted column widths to prevent line breaks
+        t1 = Table(project_table, colWidths=[170, 300])
+
         t1.setStyle(TableStyle([
-            ("FONTNAME", (0, 0), (-1, -1), "Times-Roman"),
+            ("FONTNAME", (0, 0), (0, -1), "Times-Bold"),  # bold for labels
+            ("FONTNAME", (1, 0), (1, -1), "Times-Roman"),
             ("FONTSIZE", (0, 0), (-1, -1), 11),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 4),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ("TOPPADDING", (0, 0), (-1, -1), 2),
         ]))
+
+        # Center the entire table
+        t1.hAlign = "CENTER"
+
         content.append(t1)
         content.append(Spacer(1, 15))
+
 
         # Declaration
         content.append(Paragraph(
@@ -326,7 +384,7 @@ def update_request_status(request, request_id, action):
 
         # Supervisor Section
         supervisor_table = [
-            ["NAME OF THE SUPERVISOR:", supervisor.name],
+            ["NAME OF THE SUPERVISOR:", f"{supervisor.name} - {supervisor.Id_number}"],
             ["SIGNATURE:", "_________________________"],
             ["DATE:", str(datetime.date.today())],
         ]
@@ -337,22 +395,57 @@ def update_request_status(request, request_id, action):
             ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
         ]))
         content.append(t2)
-        content.append(Spacer(1, 15))
-        content.append(Paragraph("<b>(Signature of Head of the Department)</b>", normal_style))
+
+
+
+
+
+
+        # create a right-aligned style that inherits your normal_style
+        right_style = ParagraphStyle('right', parent=normal_style, alignment=TA_RIGHT)
+
+        # signature paragraph
+        hod_signature = Paragraph("<b>(Signature of Head of the Department)</b>", right_style)
+
+        # use doc.width so the table spans the usable page width
+        hod_table = Table([[hod_signature]], colWidths=[doc.width])
+        hod_table.setStyle(TableStyle([
+            ("ALIGN", (0,0), (-1,-1), "RIGHT"),
+            ("LEFTPADDING", (0,0), (-1,-1), 0),
+            ("RIGHTPADDING", (0,0), (-1,-1), 0),
+            ("TOPPADDING", (0,0), (-1,-1), 0),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 0),
+        ]))
+
+        content.append(Spacer(1, 60))
+        content.append(hod_table)
+
+
+
 
         # === PAGE 2 ===
         content.append(PageBreak())
 
-        # Add Logos again for Page 2
+
+        # === SINGLE CENTERED LOGO ===
         try:
-            logos2 = [
-                auto_width_image("static/images/VELTECH.png", 1.1 * inch),
-                auto_width_image("static/images/NAAC.png", 1.1 * inch),
-                auto_width_image("static/images/NIRF.png", 1.1 * inch),
-            ]
-            logo_row2 = Table([[logos2[0], logos2[1], logos2[2]]], colWidths=[2*inch]*3)
-            logo_row2.setStyle(TableStyle([("ALIGN", (0, 0), (-1, -1), "CENTER")]))
-            content.append(logo_row2)
+            # Fixed logo height — slightly smaller to fit neatly
+            fixed_height = 1 * inch
+            logo = auto_width_image("static/images/FULL_VELTECH_LOGO.png", fixed_height)
+
+            # Center the logo exactly in the middle without spacing
+            logo_table = Table([[logo]], colWidths=[6.5 * inch])
+            logo_table.setStyle(TableStyle([
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+            ]))
+
+            # Add the table directly — no extra Spacer
+            content.append(logo_table)
         except:
             pass
 
@@ -367,50 +460,96 @@ def update_request_status(request, request_id, action):
             Spacer(1, 15),
         ]
 
-        # Student Info Table
-        student_rows = []
-        for i, member in enumerate(batch.members.all(), start=1):
-            student_rows.append(["Name of the Student{}:".format(i), member.name])
-            student_rows.append(["VTU No. / Reg. No.:", f"{getattr(member, 'Id_number', '')} / {getattr(member, 'reg_no', '')}"])
-            student_rows.append(["", ""])  # space row
-        t3 = Table(student_rows, colWidths=[180, 300])
-        t3.setStyle(TableStyle([
-            ("FONTNAME", (0, 0), (-1, -1), "Times-Roman"),
-            ("FONTSIZE", (0, 0), (-1, -1), 11),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-        ]))
-        content.append(t3)
-        content.append(Spacer(1, 10))
 
-        # Project Title & Supervisor
-        info_table = [
-            ["Title of the Project:", getattr(batch.project, "title", "N/A")],
-            ["Project Supervisor:", supervisor.name],
+
+        # Project Info Table
+        project_table = [
+            [
+                Paragraph("<b>TITLE:</b>", wrap_style),
+                Paragraph(getattr(batch.project, "title", "N/A"), wrap_style),
+            ],
+            [
+                Paragraph("<b>DOMAIN:</b>", wrap_style),
+                Paragraph(getattr(batch.project, "domain", "N/A"), wrap_style),
+            ],
+            [
+                Paragraph("<b>SUPERVISOR NAME:</b>", wrap_style),
+                Paragraph( f"{supervisor.name} - {supervisor.Id_number}", wrap_style),
+            ],
         ]
-        t4 = Table(info_table, colWidths=[180, 300])
-        t4.setStyle(TableStyle([
-            ("FONTNAME", (0, 0), (-1, -1), "Times-Roman"),
+
+        # Adjusted column widths to prevent line breaks
+        t1 = Table(project_table, colWidths=[170, 300])
+
+        t1.setStyle(TableStyle([
+            ("FONTNAME", (0, 0), (0, -1), "Times-Bold"),  # bold for labels
+            ("FONTNAME", (1, 0), (1, -1), "Times-Roman"),
             ("FONTSIZE", (0, 0), (-1, -1), 11),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 4),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ("TOPPADDING", (0, 0), (-1, -1), 2),
         ]))
-        content.append(t4)
-        content.append(Spacer(1, 10))
+
+        # Center the entire table
+        t1.hAlign = "CENTER"
+
+        content.append(t1)
+        content.append(Spacer(1, 15))
+        # content.append(Spacer(1, 10))
 
         # Abstract
-        content.append(Paragraph("<b>ABSTRACT (Minimum 300 words):</b>", normal_style))
+        content.append(Paragraph("<b>ABSTRACT:</b>", normal_style))
         abstract = getattr(batch.project, "abstract", "No abstract available.")
         content.append(Paragraph(abstract.replace("\n", "<br/>"), justify_style))
         content.append(Spacer(1, 30))
+        
+        
+        # Students Table
+        data = [["S.No", "VTU No", "Register No", "Name of the Student", "Signature"]]
+        for i, member in enumerate(batch.members.all(), start=1):
+            data.append([
+                str(i),
+                getattr(member, "Id_number", ""),
+                getattr(member, "reg_no", ""),
+                member.name,
+                ""
+            ])
+        student_table = Table(data, colWidths=[40, 80, 90, 200, 80])
+        student_table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+            ("BOX", (0, 0), (-1, -1), 0.75, colors.black),
+            ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("FONTNAME", (0, 0), (-1, -1), "Times-Roman"),
+            ("FONTSIZE", (0, 0), (-1, -1), 10),
+        ]))
+        content.append(student_table)
+        content.append(Spacer(1, 50))
+        
+        
+        # Define a centered paragraph style
+        center_style = ParagraphStyle('center', alignment=TA_CENTER, fontName='Times-Roman', fontSize=11)
 
-        # Signature Lines
-        sign_table2 = Table([
-            ["_________________________", "_________________________", "_________________________"],
-            ["STUDENT", "PROJECT SUPERVISOR", "PROJECT COORDINATOR"]
-        ], colWidths=[160, 160, 160])
+        # Create bold paragraphs properly
+        coordinator_sign = Paragraph("<b>(Sign of Project Coordinator)</b>", center_style)
+        supervisor_sign = Paragraph("<b>(Sign of Project Supervisor)</b>", center_style)
+
+        # Table with two columns (match colWidths length)
+        sign_table2 = Table(
+            [[coordinator_sign, supervisor_sign]],
+            colWidths=[250, 250]  # Adjust width as needed for page size
+        )
+
+        # Style for alignment and clean borders
         sign_table2.setStyle(TableStyle([
             ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-            ("FONTNAME", (0, 1), (-1, 1), "Times-Roman"),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
         ]))
+
         content.append(sign_table2)
 
         # === Build PDF ===
@@ -422,7 +561,7 @@ def update_request_status(request, request_id, action):
         batch.pdf_report = pdf_url
         batch.save()
 
-        messages.success(request, f"Accepted request and generated official two-page PDF for {batch}.")
+        messages.success(request, f"Accepted request and generated official two-page PDF for {batch}.", extra_tags="user")
         return redirect("supervisor_dashboard")
 
     elif action == "decline":

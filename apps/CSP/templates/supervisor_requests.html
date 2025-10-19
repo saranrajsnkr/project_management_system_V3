@@ -6,13 +6,13 @@
 <section class="supervisor-dashboard">
   <h2 class="section-title">Supervisor Dashboard</h2>
 
-  {% if messages %}
+  {% comment %} {% if messages %}
   <div class="messages-container">
     {% for message in messages %}
     <div class="alert alert-{{ message.tags }}">{{ message }}</div>
     {% endfor %}
   </div>
-  {% endif %}
+  {% endif %} {% endcomment %}
 
   {% if requests %}
   <div class="table-wrapper">
