@@ -264,6 +264,11 @@ def update_request_status(request, request_id, action):
         buffer = BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4,
                                 leftMargin=60, rightMargin=60, topMargin=60, bottomMargin=40)
+        # Set PDF metadata
+        doc.title = f"Batch {batch.id} - Supervisor Selection and Abstract Form"
+        doc.author = "SCHOOL OF COMPUTING - AIML Department"
+        doc.subject = "Community Service Project Form"
+        doc.keywords = "Batch, Supervisor, Abstract, CSP"
 
         styles = getSampleStyleSheet()
         title_style = ParagraphStyle('title', fontSize=14, alignment=TA_CENTER, spaceAfter=10, fontName='Times-Bold')
@@ -599,7 +604,7 @@ def update_request_status(request, request_id, action):
             buffer,
             public_id=file_name,  # sets the "path" + filename in Cloudinary
             resource_type="auto",
-            folder=f"VELTECH/CSP/batch_{batch.id}",
+            folder=f"CSP/batch_{batch.id}",
             overwrite=True  # optional: overwrite if it exists
         )
         pdf_url = upload_result.get("secure_url")
