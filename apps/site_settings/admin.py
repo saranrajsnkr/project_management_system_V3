@@ -25,13 +25,14 @@ class DeptMemberAdmin(admin.ModelAdmin):
         writer = csv.writer(response)
 
         # CSV Header
-        writer.writerow(["Name", "VTU/TTS Number", "Email", "Phone", "Role"])
+        writer.writerow(["Name", "VTU/TTS Number","Registration Number", "Email", "Phone", "Role", "Catogry"])
 
         # CSV Rows
         for member in queryset:
             writer.writerow([
                 member.name,
                 member.Id_number,
+                member.reg_no,
                 member.email,
                 member.phone or '',
                 member.role or '',
@@ -83,6 +84,7 @@ class DeptMemberAdmin(admin.ModelAdmin):
                         dept_member.objects.create(
                             name=row.get("Name", "").strip(),
                             Id_number=id_number,
+                            reg_no=row.get("Registration Number", "").strip(),
                             email=row.get("Email", "").strip(),
                             phone=row.get("Phone", "").strip(),
                             role=row.get("Role", "").strip(),

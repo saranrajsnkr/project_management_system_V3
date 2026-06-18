@@ -83,11 +83,11 @@ class CustomAccountAdapter(DefaultAccountAdapter):
                 messages.error(request, "Please use your @veltech.edu.in email to sign up.", extra_tags='domain_error')
             raise ValidationError("Only @veltech.edu.in emails are allowed.")
 
-        # 🔹 2. Check AIML dept membership
-        if not dept_member.objects.filter(email__iexact=email).exists():
-            if request:
-                messages.error(request, "Only AIML department members can sign up.", extra_tags='domain_error')
-            raise ValidationError('Email not in AIML department.')
+        # # 🔹 2. Check AIML dept membership
+        # if not dept_member.objects.filter(email__iexact=email).exists():
+        #     if request:
+        #         messages.error(request, "Only AIML department members can sign up.", extra_tags='domain_error')
+        #     raise ValidationError('Email not in AIML department.')
 
         return email
 

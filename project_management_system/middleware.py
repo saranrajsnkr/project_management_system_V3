@@ -61,16 +61,16 @@ class DomainRestrictMiddleware:
                 logout(request)
                 return redirect("custom_login")
 
-            #✅ Step 2: Check if email exists in DeptMember
-            if not dept_member.objects.filter(email__iexact=email).exists():
-                messages.add_message(
-                    request,
-                    messages.ERROR,
-                    "Email is not in the AIML department.",
-                    # extra_tags='domain_error'
-                )
-                logout(request)
-                return redirect("custom_login")
+            # #✅ Step 2: Check if email exists in DeptMember
+            # if not dept_member.objects.filter(email__iexact=email).exists():
+            #     messages.add_message(
+            #         request,
+            #         messages.ERROR,
+            #         "Email is not in the AIML department.",
+            #         # extra_tags='domain_error'
+            #     )
+            #     logout(request)
+            #     return redirect("custom_login")
 
         return self.get_response(request)
 
